@@ -1,0 +1,1 @@
+The equation cannot be used because the mach relationships across an oblique shock need to be based on the normal contribution, not the magnitude
