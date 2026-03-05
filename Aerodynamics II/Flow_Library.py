@@ -152,7 +152,7 @@ class Isentropic_Flow():
         return f"\nM = {M}\nP0/P = {P_ratio}\nrho0/rho = {rho_ratio}\nT0/T = {T_ratio}\n"
 
 class Oblique_Shock():
-    def __init__(self, units:str, M1:float, gamma:float=1.4, wave_angle_beta:float=None,
+    def __init__(self, units:str, M1:float, gamma:float=1.4, wave_angle_beta:float=None, calc_strong_beta:bool=False,
                  defl_angle_theta:float=None, M2:float=None, P_ratio:float=None, rho_ratio:float=None, P1:float=None,
                  P0_1:float=None,T1:float=None,T0_1:float=None,rho1:float=None):
         """\"units\" = \"metric\" or \"imperial\"\n
@@ -190,11 +190,14 @@ class Oblique_Shock():
 
         elif defl_angle_theta is not None:
             self.theta = defl_angle_theta
+
+            # check to make sure input theta is within maximum possible value
             theta_max = self.calc_theta_max(M1,gamma)
             if self.theta > theta_max:
                 theta = round(np.rad2deg(self.theta),3)
                 theta_max = round(np.rad2deg(theta_max),3)
-                raise ValueError(f"Deflection angle theta ({theta} deg) is greater than theta_max ({theta_max} deg)")
+                raise ValueError(f"Deflection angle theta ({theta} deg) is greater than theta_max ({theta_max} deg): shock detatched")
+            
             self.beta = self.theta_beta_M_rel(self.ga, theta=self.theta, M1=M1)
             M1n = M1*np.sin(self.beta)
             M2n = self.calc_M(self.ga,M1n)
@@ -244,7 +247,7 @@ class Oblique_Shock():
         return ((1 + ((gamma - 1)/2)*M**2)/(gamma*M**2 - (gamma - 1)/2))**0.5
     
     @staticmethod
-    def theta_beta_M_rel(gamma,M1:float,theta:float=None,beta:float=None) -> float:
+    def theta_beta_M_rel(gamma:float,M1:float,theta:float=None,beta:float=None,calc_strong_beta:bool=False) -> float:
         if theta is None and beta is None:
             raise ValueError("Must provide theta or beta")
         
@@ -256,7 +259,11 @@ class Oblique_Shock():
             def residual(beta,theta,M1):
                 return (theta - np.atan(2/np.tan(beta) * (M1**2*np.sin(beta)**2 - 1)/(M1**2*(gamma + np.cos(2*beta)) + 2)))
             
-            return fsolve(residual, x0=0, args=(theta,M1))
+            if calc_strong_beta is False:
+                start = 0.01 # don't start at zero or you get division by zero error
+            else:
+                start = np.pi - 0.01
+            return float(fsolve(residual, x0=start, args=(theta,M1)))
         
     @staticmethod
     def calc_theta_max(M1:float,gamma:float=1.4) -> float:
