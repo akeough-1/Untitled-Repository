@@ -155,7 +155,8 @@ class Oblique_Shock():
     def __init__(self, units:str, M1:float, gamma:float=1.4, wave_angle_beta:float=None,
                  defl_angle_theta:float=None, M2:float=None, P_ratio:float=None, rho_ratio:float=None, P1:float=None,
                  P0_1:float=None,T1:float=None,T0_1:float=None,rho1:float=None):
-        """\"units\" = \"metric\" or \"imperial\""""
+        """\"units\" = \"metric\" or \"imperial\"\n
+        All angles in radians"""
 
         self.ga = gamma
 
@@ -166,7 +167,7 @@ class Oblique_Shock():
             Cp = Imperial_Constants.Cp
             R = Imperial_Constants.R
         else:
-            raise ValueError("ERROR: must input units as \"metric\" or \"imperial\"")
+            raise ValueError("Must input units as \"metric\" or \"imperial\"")
 
         if wave_angle_beta is None and defl_angle_theta is None:
             if P_ratio is not None:
@@ -175,7 +176,7 @@ class Oblique_Shock():
                 M1n = (2*rho_ratio/((self.ga - 1)*rho_ratio - (self.ga + 1)))**0.5
                 
             else:
-                raise ValueError("ERROR: need pressure or density ratio")
+                raise ValueError("Need pressure or density ratio")
             
             self.beta = np.asin(M1n/M1) #rad
             M2n = self.calc_M(self.ga,M1n)
@@ -191,7 +192,9 @@ class Oblique_Shock():
             self.theta = defl_angle_theta
             theta_max = self.calc_theta_max(M1,gamma)
             if self.theta > theta_max:
-                raise ValueError(f"ERROR: deflection angle theta ({round(self.theta,3)}) is greater than theta_max ({round(theta_max,3)})")
+                theta = round(np.rad2deg(self.theta),3)
+                theta_max = round(np.rad2deg(theta_max),3)
+                raise ValueError(f"Deflection angle theta ({theta} deg) is greater than theta_max ({theta_max} deg)")
             self.beta = self.theta_beta_M_rel(self.ga, theta=self.theta, M1=M1)
             M1n = M1*np.sin(self.beta)
             M2n = self.calc_M(self.ga,M1n)
@@ -243,7 +246,7 @@ class Oblique_Shock():
     @staticmethod
     def theta_beta_M_rel(gamma,M1:float,theta:float=None,beta:float=None) -> float:
         if theta is None and beta is None:
-            raise ValueError("ERROR: must provide theta or beta")
+            raise ValueError("Must provide theta or beta")
         
         if theta is None:
             theta = np.atan(2/np.tan(beta) * (M1**2*np.sin(beta)**2 - 1)/(M1**2*(gamma + np.cos(2*beta)) + 2))
@@ -314,7 +317,8 @@ class Normal_Shock(Oblique_Shock):
     def __init__(self, units:str, gamma:float=1.4, M1:float=None, M2:float=None,
                  P_ratio:float=None, rho_ratio:float=None, P1:float=None,
                  P0_1:float=None,T1:float=None,T0_1:float=None,rho1:float=None):
-        """\"units\" = \"metric\" or \"imperial\""""
+        """\"units\" = \"metric\" or \"imperial\"\n
+        All angles in radians"""
 
         self.ga = gamma
         beta = np.pi/2 # 90 degree wave angle (normal)
@@ -327,7 +331,7 @@ class Normal_Shock(Oblique_Shock):
             elif rho_ratio is not None:
                 M1 = (2*rho_ratio/((self.ga - 1)*rho_ratio - (self.ga + 1)))**0.5
             else:
-                raise ValueError("ERROR: insufficient inputs")
+                raise ValueError("Insufficient inputs")
         
         # call Oblique_Shock __init__ with beta = 90 deg
         super().__init__(units, M1, self.ga, wave_angle_beta=beta, M2=M2, P_ratio=P_ratio,
@@ -348,8 +352,7 @@ def pitot_tube(supersonic:bool=False,gamma:float=1.4,M:float=None,stagnation_P:f
             return M
         
         else:
-            print("ERROR: insuficient inputs")
-            sys.exit()
+            raise ValueError("Insufficient inputs")
 
     elif supersonic == True:
         if M:
@@ -367,8 +370,6 @@ def pitot_tube(supersonic:bool=False,gamma:float=1.4,M:float=None,stagnation_P:f
             return fsolve(residual, x0=1, args=(gamma,P_ratio))
         
         else:
-            print("ERROR: insuficient inputs")
-            sys.exit()
+            raise ValueError("Insufficient inputs")
     else:
-        print("ERROR: \"supersonic\" must be True or False")
-        sys.exit()
+        raise TypeError("Input \"supersonic\" must be True or False")
