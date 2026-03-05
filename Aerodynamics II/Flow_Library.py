@@ -213,6 +213,7 @@ class Oblique_Shock():
 
         self.M1 = M1
         self.M2 = M2n/np.sin(self.beta - self.theta)
+        self.mu = np.atan(1/((M1**2 - 1)**0.5)) # Mach Angle
 
         # calculating values across shock based on user input
         # neglecting the else statements causing problems with subclassing
@@ -293,6 +294,7 @@ class Oblique_Shock():
     def __repr__(self) -> str:
         M1 = round(self.M1,4)
         M2 = round(self.M2,4)
+        mu = round(self.mu,4)
         P_ratio = round(self.P_ratio,4)
         T_ratio = round(self.T_ratio,4)
         rho_ratio = round(self.rho_ratio,4)
@@ -300,7 +302,7 @@ class Oblique_Shock():
         P0_ratio = round(self.P0_ratio,4)
         T0_ratio = round(self.T0_ratio,4)
 
-        base_str = f"\nM1 = {M1}\nM2 = {M2}\nP2/P1 = {P_ratio}\nT2/T1 = {T_ratio}\nrho2/rho1 = {rho_ratio}\ns2 - s1 = {entropy}\nP0_2/P0_1 = {P0_ratio}\nT0_2/T0_1 = {T0_ratio}"
+        base_str = f"\nM1 = {M1}\nM2 = {M2}\nMach Angle mu = {mu}\nP2/P1 = {P_ratio}\nT2/T1 = {T_ratio}\nrho2/rho1 = {rho_ratio}\ns2 - s1 = {entropy}\nP0_2/P0_1 = {P0_ratio}\nT0_2/T0_1 = {T0_ratio}"
         
         if self.P2 is not None:
             P2 = round(self.P2,4)
