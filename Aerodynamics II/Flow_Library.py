@@ -189,6 +189,9 @@ class Oblique_Shock():
 
         elif defl_angle_theta is not None:
             self.theta = defl_angle_theta
+            theta_max = self.calc_theta_max(M1,gamma)
+            if self.theta > theta_max:
+                raise ValueError(f"ERROR: deflection angle theta ({round(self.theta,3)}) is greater than theta_max ({round(theta_max,3)})")
             self.beta = self.theta_beta_M_rel(self.ga, theta=self.theta, M1=M1)
             M1n = M1*np.sin(self.beta)
             M2n = self.calc_M(self.ga,M1n)
