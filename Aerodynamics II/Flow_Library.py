@@ -1,5 +1,6 @@
 import sys
 import numpy as np
+from scipy.optimize import fsolve
 
 class Constants():
     R = 1
@@ -204,6 +205,7 @@ class Oblique_Shock():
         self.M1 = M1
         self.M2 = M2n/np.sin(self.beta - self.theta)
 
+        # calculating values across shock based on user input
         # neglecting the else statements causing problems with subclassing
         if P1 is not None:
             self.P2 = self.P_ratio*P1
@@ -245,13 +247,36 @@ class Oblique_Shock():
             return theta
 
         else:
-            from scipy.optimize import fsolve
-
             def residual(beta,theta,M1):
                 return (theta - np.atan(2/np.tan(beta) * (M1**2*np.sin(beta)**2 - 1)/(M1**2*(gamma + np.cos(2*beta)) + 2)))
             
             return fsolve(residual, x0=0, args=(theta,M1))
+        
+    @staticmethod
+    def calc_theta_max(M1:float,gamma:float=1.4) -> float:
+        new_theta = 0
 
+        for beta in np.linspace(np.pi/2,0,50):
+            old_theta = new_theta
+            new_theta = np.atan(2/np.tan(beta) * (M1**2*np.sin(beta)**2 - 1)/(M1**2*(gamma + np.cos(2*beta)) + 2))
+            if new_theta < old_theta:
+                new_theta = old_theta
+                break
+
+        # create enough of a gap to overcome previous small step size
+        new_beta = beta + 0.05
+        new_theta = np.atan(2/np.tan(beta) * (M1**2*np.sin(beta)**2 - 1)/(M1**2*(gamma + np.cos(2*beta)) + 2))
+
+        for beta in np.linspace(new_beta,0,10000):
+            old_theta = new_theta
+            new_theta = np.atan(2/np.tan(beta) * (M1**2*np.sin(beta)**2 - 1)/(M1**2*(gamma + np.cos(2*beta)) + 2))
+            if new_theta < old_theta:
+                theta_max = old_theta
+                break
+
+        return theta_max
+
+    # using print() on a shock object executes the following:
     def __repr__(self) -> str:
         M1 = round(self.M1,4)
         M2 = round(self.M2,4)
