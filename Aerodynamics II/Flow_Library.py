@@ -1,5 +1,6 @@
 import sys
 import numpy as np
+from scipy.optimize import fsolve
 
 class Constants():
     R = 1
@@ -151,10 +152,11 @@ class Isentropic_Flow():
         return f"\nM = {M}\nP0/P = {P_ratio}\nrho0/rho = {rho_ratio}\nT0/T = {T_ratio}\n"
 
 class Oblique_Shock():
-    def __init__(self, units:str, M1:float, gamma:float=1.4, wave_angle_beta:float=None,
+    def __init__(self, units:str, M1:float, gamma:float=1.4, wave_angle_beta:float=None, calc_strong_beta:bool=False,
                  defl_angle_theta:float=None, M2:float=None, P_ratio:float=None, rho_ratio:float=None, P1:float=None,
                  P0_1:float=None,T1:float=None,T0_1:float=None,rho1:float=None):
-        """\"units\" = \"metric\" or \"imperial\""""
+        """\"units\" = \"metric\" or \"imperial\"\n
+        All angles in radians"""
 
         self.ga = gamma
 
@@ -165,7 +167,7 @@ class Oblique_Shock():
             Cp = Imperial_Constants.Cp
             R = Imperial_Constants.R
         else:
-            raise ValueError("ERROR: must input units as \"metric\" or \"imperial\"")
+            raise ValueError("Must input units as \"metric\" or \"imperial\"")
 
         if wave_angle_beta is None and defl_angle_theta is None:
             if P_ratio is not None:
@@ -174,7 +176,7 @@ class Oblique_Shock():
                 M1n = (2*rho_ratio/((self.ga - 1)*rho_ratio - (self.ga + 1)))**0.5
                 
             else:
-                raise ValueError("ERROR: need pressure or density ratio")
+                raise ValueError("Need pressure or density ratio if no angle input")
             
             self.beta = np.asin(M1n/M1) #rad
             M2n = self.calc_M(self.ga,M1n)
@@ -188,6 +190,14 @@ class Oblique_Shock():
 
         elif defl_angle_theta is not None:
             self.theta = defl_angle_theta
+
+            # check to make sure input theta is within maximum possible value
+            theta_max = self.calc_theta_max(M1,gamma)
+            if self.theta > theta_max:
+                theta = round(np.rad2deg(self.theta),3)
+                theta_max = round(np.rad2deg(theta_max),3)
+                raise ValueError(f"Deflection angle theta ({theta} deg) is greater than theta_max ({theta_max} deg): shock detatched")
+            
             self.beta = self.theta_beta_M_rel(self.ga, theta=self.theta, M1=M1)
             M1n = M1*np.sin(self.beta)
             M2n = self.calc_M(self.ga,M1n)
@@ -203,7 +213,9 @@ class Oblique_Shock():
 
         self.M1 = M1
         self.M2 = M2n/np.sin(self.beta - self.theta)
+        self.mu = np.atan(1/((M1**2 - 1)**0.5)) # Mach Angle
 
+        # calculating values across shock based on user input
         # neglecting the else statements causing problems with subclassing
         if P1 is not None:
             self.P2 = self.P_ratio*P1
@@ -236,25 +248,61 @@ class Oblique_Shock():
         return ((1 + ((gamma - 1)/2)*M**2)/(gamma*M**2 - (gamma - 1)/2))**0.5
     
     @staticmethod
-    def theta_beta_M_rel(gamma,M1:float,theta:float=None,beta:float=None) -> float:
+    def theta_beta_M_rel(gamma:float,M1:float,theta:float=None,beta:float=None,calc_strong_beta:bool=False) -> float:
         if theta is None and beta is None:
-            raise ValueError("ERROR: must provide theta or beta")
+            raise ValueError("Must provide theta or beta")
         
         if theta is None:
             theta = np.atan(2/np.tan(beta) * (M1**2*np.sin(beta)**2 - 1)/(M1**2*(gamma + np.cos(2*beta)) + 2))
             return theta
 
         else:
-            from scipy.optimize import fsolve
-
             def residual(beta,theta,M1):
                 return (theta - np.atan(2/np.tan(beta) * (M1**2*np.sin(beta)**2 - 1)/(M1**2*(gamma + np.cos(2*beta)) + 2)))
             
-            return fsolve(residual, x0=0, args=(theta,M1))
+            if calc_strong_beta is False:
+                start = 0.01 # don't start at zero or you get division by zero error
+            else:
+                start = np.pi - 0.01
 
+            sol = fsolve(residual, x0=start, args=(theta,M1))
+
+            # sometimes it outputs a 0D array that isn't recognized as 0D? idk why but this fixes it
+            if type(sol) is np.ndarray:
+                sol = sol[0]
+            return sol
+        
+    @staticmethod
+    def calc_theta_max(M1:float,gamma:float=1.4) -> float:
+        new_theta = 0
+
+        for beta in np.linspace(np.pi/2,0,50):
+            old_theta = new_theta
+            new_theta = np.atan(2/np.tan(beta) * (M1**2*np.sin(beta)**2 - 1)/(M1**2*(gamma + np.cos(2*beta)) + 2))
+            if new_theta < old_theta:
+                new_theta = old_theta
+                break
+
+        # create enough of a gap to overcome previous small step size
+        new_beta = beta + 0.05
+        new_theta = np.atan(2/np.tan(beta) * (M1**2*np.sin(beta)**2 - 1)/(M1**2*(gamma + np.cos(2*beta)) + 2))
+
+        for beta in np.linspace(new_beta,0,10000):
+            old_theta = new_theta
+            new_theta = np.atan(2/np.tan(beta) * (M1**2*np.sin(beta)**2 - 1)/(M1**2*(gamma + np.cos(2*beta)) + 2))
+            if new_theta < old_theta:
+                theta_max = old_theta
+                break
+
+        return theta_max
+
+    # using print() on a shock object executes the following:
     def __repr__(self) -> str:
         M1 = round(self.M1,4)
         M2 = round(self.M2,4)
+        mu = round(self.mu,4)
+        theta = round(self.theta,4)
+        beta = round(self.beta,4)
         P_ratio = round(self.P_ratio,4)
         T_ratio = round(self.T_ratio,4)
         rho_ratio = round(self.rho_ratio,4)
@@ -262,8 +310,9 @@ class Oblique_Shock():
         P0_ratio = round(self.P0_ratio,4)
         T0_ratio = round(self.T0_ratio,4)
 
-        base_str = f"\nM1 = {M1}\nM2 = {M2}\nP2/P1 = {P_ratio}\nT2/T1 = {T_ratio}\nrho2/rho1 = {rho_ratio}\ns2 - s1 = {entropy}\nP0_2/P0_1 = {P0_ratio}\nT0_2/T0_1 = {T0_ratio}"
-        
+        base_str = f"\nM1 = {M1}\nM2 = {M2}\nMach Angle mu = {mu}\ndefl angle theta = {theta}\nwave angle beta = {beta}\nP2/P1 = {P_ratio}\n"
+        base_str += f"T2/T1 = {T_ratio}\nrho2/rho1 = {rho_ratio}\ns2 - s1 = {entropy}\nP0_2/P0_1 = {P0_ratio}\nT0_2/T0_1 = {T0_ratio}"
+
         if self.P2 is not None:
             P2 = round(self.P2,4)
             base_str += f"\nP2 = {P2}"
@@ -286,7 +335,8 @@ class Normal_Shock(Oblique_Shock):
     def __init__(self, units:str, gamma:float=1.4, M1:float=None, M2:float=None,
                  P_ratio:float=None, rho_ratio:float=None, P1:float=None,
                  P0_1:float=None,T1:float=None,T0_1:float=None,rho1:float=None):
-        """\"units\" = \"metric\" or \"imperial\""""
+        """\"units\" = \"metric\" or \"imperial\"\n
+        All angles in radians"""
 
         self.ga = gamma
         beta = np.pi/2 # 90 degree wave angle (normal)
@@ -299,7 +349,7 @@ class Normal_Shock(Oblique_Shock):
             elif rho_ratio is not None:
                 M1 = (2*rho_ratio/((self.ga - 1)*rho_ratio - (self.ga + 1)))**0.5
             else:
-                raise ValueError("ERROR: insufficient inputs")
+                raise ValueError("Insufficient inputs")
         
         # call Oblique_Shock __init__ with beta = 90 deg
         super().__init__(units, M1, self.ga, wave_angle_beta=beta, M2=M2, P_ratio=P_ratio,
@@ -308,6 +358,8 @@ class Normal_Shock(Oblique_Shock):
 
 def pitot_tube(supersonic:bool=False,gamma:float=1.4,M:float=None,stagnation_P:float=None,
                static_P:float=None,P_ratio:float=None) -> float:
+    """If input M, output P_02/P1\n
+    Else output M"""
     if supersonic == False:
         if M:
             P_ratio = (1 + (gamma - 1)/2*M**2)**(gamma/(gamma - 1))
@@ -320,8 +372,7 @@ def pitot_tube(supersonic:bool=False,gamma:float=1.4,M:float=None,stagnation_P:f
             return M
         
         else:
-            print("ERROR: insuficient inputs")
-            sys.exit()
+            raise ValueError("Insufficient inputs")
 
     elif supersonic == True:
         if M:
@@ -339,8 +390,6 @@ def pitot_tube(supersonic:bool=False,gamma:float=1.4,M:float=None,stagnation_P:f
             return fsolve(residual, x0=1, args=(gamma,P_ratio))
         
         else:
-            print("ERROR: insuficient inputs")
-            sys.exit()
+            raise ValueError("Insufficient inputs")
     else:
-        print("ERROR: \"supersonic\" must be True or False")
-        sys.exit()
+        raise TypeError("Input \"supersonic\" must be True or False")
