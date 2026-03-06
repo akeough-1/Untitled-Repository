@@ -176,7 +176,7 @@ class Oblique_Shock():
                 M1n = (2*rho_ratio/((self.ga - 1)*rho_ratio - (self.ga + 1)))**0.5
                 
             else:
-                raise ValueError("Need pressure or density ratio")
+                raise ValueError("Need pressure or density ratio if no angle input")
             
             self.beta = np.asin(M1n/M1) #rad
             M2n = self.calc_M(self.ga,M1n)
@@ -264,7 +264,13 @@ class Oblique_Shock():
                 start = 0.01 # don't start at zero or you get division by zero error
             else:
                 start = np.pi - 0.01
-            return float(fsolve(residual, x0=start, args=(theta,M1)))
+
+            sol = fsolve(residual, x0=start, args=(theta,M1))
+
+            # sometimes it outputs a 0D array that isn't recognized as 0D? idk why but this fixes it
+            if type(sol) is np.ndarray:
+                sol = sol[0]
+            return sol
         
     @staticmethod
     def calc_theta_max(M1:float,gamma:float=1.4) -> float:
@@ -295,6 +301,8 @@ class Oblique_Shock():
         M1 = round(self.M1,4)
         M2 = round(self.M2,4)
         mu = round(self.mu,4)
+        theta = round(self.theta,4)
+        beta = round(self.beta,4)
         P_ratio = round(self.P_ratio,4)
         T_ratio = round(self.T_ratio,4)
         rho_ratio = round(self.rho_ratio,4)
@@ -302,8 +310,9 @@ class Oblique_Shock():
         P0_ratio = round(self.P0_ratio,4)
         T0_ratio = round(self.T0_ratio,4)
 
-        base_str = f"\nM1 = {M1}\nM2 = {M2}\nMach Angle mu = {mu}\nP2/P1 = {P_ratio}\nT2/T1 = {T_ratio}\nrho2/rho1 = {rho_ratio}\ns2 - s1 = {entropy}\nP0_2/P0_1 = {P0_ratio}\nT0_2/T0_1 = {T0_ratio}"
-        
+        base_str = f"\nM1 = {M1}\nM2 = {M2}\nMach Angle mu = {mu}\ndefl angle theta = {theta}\nwave angle beta = {beta}\nP2/P1 = {P_ratio}\n"
+        base_str += f"T2/T1 = {T_ratio}\nrho2/rho1 = {rho_ratio}\ns2 - s1 = {entropy}\nP0_2/P0_1 = {P0_ratio}\nT0_2/T0_1 = {T0_ratio}"
+
         if self.P2 is not None:
             P2 = round(self.P2,4)
             base_str += f"\nP2 = {P2}"
@@ -349,6 +358,8 @@ class Normal_Shock(Oblique_Shock):
 
 def pitot_tube(supersonic:bool=False,gamma:float=1.4,M:float=None,stagnation_P:float=None,
                static_P:float=None,P_ratio:float=None) -> float:
+    """If input M, output P_02/P1\n
+    Else output M"""
     if supersonic == False:
         if M:
             P_ratio = (1 + (gamma - 1)/2*M**2)**(gamma/(gamma - 1))
