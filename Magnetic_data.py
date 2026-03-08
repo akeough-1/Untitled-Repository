@@ -6,7 +6,7 @@ import time
 # Current location (Argonia, KS)
 lat = 37.1678
 lon = -97.7398
-alt = 0.5  # sea level in km
+alt = 383  # sea level in km
 
 current_date = datetime.now().strftime("%Y-%m-%d") + " 13:000"
 current_date = current_date.partition(" ")[0]
