@@ -264,5 +264,5 @@ class Magnetometer(InertialSensor):
         self._generic_export_measured_data(
             filename=filename,
             file_format=file_format,
-            data_labels=("t", "ax", "ay", "az"),
+            data_labels=("t", "Bx", "By", "Bz"),
         )
