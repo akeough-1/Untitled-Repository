@@ -2,6 +2,15 @@ import sys
 import numpy as np
 from scipy.optimize import fsolve
 
+def val_print(obj,atr_name:str,precision:int,unit_str:str=""):
+    try:
+        value = getattr(obj,atr_name)
+    except AttributeError:
+        raise AttributeError(f"atr_name {atr_name} not in obj {obj}. ")
+    
+    value = round(value,precision)
+    print(f"{atr_name} = {value} {unit_str}")
+
 class Constants():
     R = 1
     Cp = 7/2*R
@@ -23,7 +32,7 @@ class Metric_Constants(Constants):
     
 class Imperial_Constants(Constants):
     R = 1716
-    R_units = "ft*lb/kg/K"
+    R_units = "ft*lb/lbm/K"
     Cp = 7/2*R
     Cv = 5/2*R
     gamma = 7/5
@@ -67,7 +76,7 @@ def calculate_ideal_gas(units:str,pressure:float=None,density:float=None,temp:fl
         t_units = "R"
 
     else:
-        print("Error: units must be \"metric\" or \"imperial\"")
+        raise ValueError("Error: units must be \"metric\" or \"imperial\"")
 
     if pressure == None:
         pressure = density*R*temp
@@ -400,6 +409,7 @@ class Expansion_Fan():
     program gives the right answer"""
     def __init__(self,units:str,M1:float,defl_angle_theta:float,gamma:float=1.4,
                  P1:float=None,T1:float=None,rho1:float=None):
+        """If input P1, T1, and/or rho1, make sure they are in SI units (or Imperial equiv)"""
         self.M1 = M1
         self.theta = defl_angle_theta
         self.gamma = gamma
