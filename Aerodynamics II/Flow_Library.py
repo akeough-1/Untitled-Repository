@@ -408,7 +408,8 @@ class Expansion_Fan():
     ouput M2, mu1, mu2, isentropic ratios before & after, P2/P1, T2/T1, rho2/rho1 before & after
     program gives the right answer"""
     def __init__(self,units:str,M1:float,defl_angle_theta:float,gamma:float=1.4,
-                 P1:float=None,T1:float=None,rho1:float=None):
+                 P1:float=None,T1:float=None,rho1:float=None,
+                 P0_1:float=None,T0_1:float=None,rho0_1:float=None):
         """If input P1, T1, and/or rho1, make sure they are in SI units (or Imperial equiv)"""
         self.M1 = M1
         self.theta = defl_angle_theta
@@ -460,6 +461,25 @@ class Expansion_Fan():
         if rho1 is not None:
             self.rho1 = rho1
             self.rho2 = self.rho_ratio*rho1
+
+        if P0_1 and T0_1 and not rho0_1:
+            rho0_1 = calculate_ideal_gas(units,pressure=P0_1,temp=T0_1)
+        elif T0_1 and rho0_1 and not P0_1:
+            P0_1 = calculate_ideal_gas(units,temp=T0_1,density=rho0_1)
+        elif P0_1 and rho0_1 and not T0_1:
+            T0_1 = calculate_ideal_gas(units,pressure=P0_1,density=rho0_1)
+
+        if P0_1 is not None:
+            self.P0_1 = P0_1
+            self.P0_2 = self.P_ratio*P0_1
+
+        if T0_1 is not None:
+            self.T0_1 = T0_1
+            self.T0_2 = self.T_ratio*T0_1
+
+        if rho0_1 is not None:
+            self.rho0_1 = rho0_1
+            self.rho0_2 = self.rho_ratio*rho0_1
         
     def calc_nu(self,M:float,ga:float) -> float:
         return ((ga + 1)/(ga - 1))**0.5 * np.atan(((ga - 1)/(ga + 1)*(M**2 - 1))**0.5) - np.atan((M**2 - 1)**0.5)
