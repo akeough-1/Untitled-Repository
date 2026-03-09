@@ -53,8 +53,7 @@ def calculate_ideal_gas(units:str,pressure:float=None,density:float=None,temp:fl
         input_err = True
 
     if input_err == True:
-        print("Error: must input at least two inputs")
-        return None
+        raise ValueError("Must input at least two units")
 
     if units == "metric":
         R = 287
@@ -399,7 +398,8 @@ class Expansion_Fan():
     input M1 and theta
     ouput M2, mu1, mu2, isentropic ratios before & after, P2/P1, T2/T1, rho2/rho1 before & after
     program gives the right answer"""
-    def __init__(self,M1:float,defl_angle_theta:float,gamma:float=1.4):
+    def __init__(self,units:str,M1:float,defl_angle_theta:float,gamma:float=1.4,
+                 P1:float=None,T1:float=None,rho1:float=None):
         self.M1 = M1
         self.theta = defl_angle_theta
         self.gamma = gamma
@@ -431,6 +431,25 @@ class Expansion_Fan():
         self.rho0_ratio1 = state1.rho_ratio
         self.rho0_ratio2 = state2.rho_ratio
         self.rho_ratio = self.rho0_ratio1/self.rho0_ratio2
+
+        if P1 and T1 and not rho1:
+            rho1 = calculate_ideal_gas(units,pressure=P1,temp=T1)
+        elif T1 and rho1 and not P1:
+            P1 = calculate_ideal_gas(units,temp=T1,density=rho1)
+        elif P1 and rho1 and not T1:
+            T1 = calculate_ideal_gas(units,pressure=P1,density=rho1)
+
+        if P1 is not None:
+            self.P1 = P1
+            self.P2 = self.P_ratio*P1
+
+        if T1 is not None:
+            self.T1 = T1
+            self.T2 = self.T_ratio*T1
+
+        if rho1 is not None:
+            self.rho1 = rho1
+            self.rho2 = self.rho_ratio*rho1
         
     def calc_nu(self,M:float,ga:float) -> float:
         return ((ga + 1)/(ga - 1))**0.5 * np.atan(((ga - 1)/(ga + 1)*(M**2 - 1))**0.5) - np.atan((M**2 - 1)**0.5)
