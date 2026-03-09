@@ -453,33 +453,17 @@ class Expansion_Fan():
         if P1 is not None:
             self.P1 = P1
             self.P2 = self.P_ratio*P1
+            self.P0 = self.P0_ratio1*P1
 
         if T1 is not None:
             self.T1 = T1
             self.T2 = self.T_ratio*T1
+            self.T0 = self.T0_ratio1*T1
 
         if rho1 is not None:
             self.rho1 = rho1
             self.rho2 = self.rho_ratio*rho1
-
-        if P0_1 and T0_1 and not rho0_1:
-            rho0_1 = calculate_ideal_gas(units,pressure=P0_1,temp=T0_1)
-        elif T0_1 and rho0_1 and not P0_1:
-            P0_1 = calculate_ideal_gas(units,temp=T0_1,density=rho0_1)
-        elif P0_1 and rho0_1 and not T0_1:
-            T0_1 = calculate_ideal_gas(units,pressure=P0_1,density=rho0_1)
-
-        if P0_1 is not None:
-            self.P0_1 = P0_1
-            self.P0_2 = self.P_ratio*P0_1
-
-        if T0_1 is not None:
-            self.T0_1 = T0_1
-            self.T0_2 = self.T_ratio*T0_1
-
-        if rho0_1 is not None:
-            self.rho0_1 = rho0_1
-            self.rho0_2 = self.rho_ratio*rho0_1
+            self.rho0 = self.rho0_ratio1*rho1
         
     def calc_nu(self,M:float,ga:float) -> float:
         return ((ga + 1)/(ga - 1))**0.5 * np.atan(((ga - 1)/(ga + 1)*(M**2 - 1))**0.5) - np.atan((M**2 - 1)**0.5)
