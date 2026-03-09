@@ -393,3 +393,44 @@ def pitot_tube(supersonic:bool=False,gamma:float=1.4,M:float=None,stagnation_P:f
             raise ValueError("Insufficient inputs")
     else:
         raise TypeError("Input \"supersonic\" must be True or False")
+    
+class Expansion_Fan():
+    """requirements:
+    input M1 and theta
+    ouput M2, mu1, mu2, isentropic ratios before & after, P2/P1, T2/T1, rho2/rho1 before & after
+    program gives the right answer"""
+    def __init__(self,M1:float,defl_angle_theta:float,gamma:float=1.4):
+        self.M1 = M1
+        self.theta = defl_angle_theta
+        self.gamma = gamma
+
+        self.nu1 = self.calc_nu(self.M1,self.gamma)
+        self.nu2 = self.theta + self.nu1
+
+        def residual(M,theta,nu1,ga):
+            nu2 = self.calc_nu(M,ga)
+            zero = nu2 - nu1 - theta
+            return zero
+        
+        self.M2 = fsolve(residual, x0=self.M1, args=(self.theta,self.nu1,self.gamma))
+
+        self.mu1 = np.atan(1/(self.M1**2 - 1)**0.5)
+        self.mu2 = np.atan(1/(self.M2**2 - 1)**0.5)
+
+        state1 = Isentropic_Flow(self.gamma,self.M1)
+        state2 = Isentropic_Flow(self.gamma,self.M2)
+
+        self.P0_ratio1 = state1.P_ratio
+        self.P0_ratio2 = state2.P_ratio
+        self.P_ratio = self.P0_ratio1/self.P0_ratio2
+
+        self.T0_ratio1 = state1.T_ratio
+        self.T0_ratio2 = state2.T_ratio
+        self.T_ratio = self.T0_ratio1/self.T0_ratio2
+
+        self.rho0_ratio1 = state1.rho_ratio
+        self.rho0_ratio2 = state2.rho_ratio
+        self.rho_ratio = self.rho0_ratio1/self.rho0_ratio2
+        
+    def calc_nu(M:float,ga:float) -> float:
+        ((ga + 1)/(ga - 1))**0.5 * np.atan(((ga - 1)/(ga + 1)*(M**2 - 1))**0.5) - np.atan((M**2 - 1)**0.5)
