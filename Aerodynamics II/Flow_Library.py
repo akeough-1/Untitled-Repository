@@ -412,14 +412,14 @@ class Expansion_Fan():
             zero = nu2 - nu1 - theta
             return zero
         
-        self.M2 = fsolve(residual, x0=self.M1, args=(self.theta,self.nu1,self.gamma))
+        self.M2 = fsolve(residual, x0=self.M1, args=(self.theta,self.nu1,self.gamma))[0]
 
         self.mu1 = np.atan(1/(self.M1**2 - 1)**0.5)
         self.mu2 = np.atan(1/(self.M2**2 - 1)**0.5)
 
         state1 = Isentropic_Flow(self.gamma,self.M1)
         state2 = Isentropic_Flow(self.gamma,self.M2)
-
+        
         self.P0_ratio1 = state1.P_ratio
         self.P0_ratio2 = state2.P_ratio
         self.P_ratio = self.P0_ratio1/self.P0_ratio2
@@ -432,5 +432,11 @@ class Expansion_Fan():
         self.rho0_ratio2 = state2.rho_ratio
         self.rho_ratio = self.rho0_ratio1/self.rho0_ratio2
         
-    def calc_nu(M:float,ga:float) -> float:
-        ((ga + 1)/(ga - 1))**0.5 * np.atan(((ga - 1)/(ga + 1)*(M**2 - 1))**0.5) - np.atan((M**2 - 1)**0.5)
+    def calc_nu(self,M:float,ga:float) -> float:
+        return ((ga + 1)/(ga - 1))**0.5 * np.atan(((ga - 1)/(ga + 1)*(M**2 - 1))**0.5) - np.atan((M**2 - 1)**0.5)
+
+    def __repr__(self):
+        out_str = ""
+        for atr in self.__dict__:
+            out_str += f"{atr} = {round(float(getattr(self,atr)),4)}\n"
+        return out_str
