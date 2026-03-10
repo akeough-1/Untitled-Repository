@@ -492,6 +492,15 @@ class Expansion_Fan():
                 self.rho1 = rho1
                 self.rho2 = self.rho_ratio*rho1
                 self.rho0 = self.rho0_ratio1*rho1
+
+        elif T2 is not None:
+            return NotImplemented
+        
+        elif rho2 is not None:
+            return NotImplemented
+        
+        else:
+            raise ValueError("Insufficient input values to solve.")
         
     def calc_nu(self,M:float) -> float:
         g = self.gamma
