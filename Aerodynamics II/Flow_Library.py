@@ -2,6 +2,10 @@ import sys
 import numpy as np
 from scipy.optimize import fsolve
 
+def val_print(attr:int|float,label:str,precision:int,unit_str:str=""):
+    value = round(attr,precision)
+    print(f"{label} = {value} {unit_str}")
+
 class Constants():
     R = 1
     Cp = 7/2*R
@@ -23,7 +27,7 @@ class Metric_Constants(Constants):
     
 class Imperial_Constants(Constants):
     R = 1716
-    R_units = "ft*lb/kg/K"
+    R_units = "ft*lb/lbm/K"
     Cp = 7/2*R
     Cv = 5/2*R
     gamma = 7/5
@@ -53,8 +57,7 @@ def calculate_ideal_gas(units:str,pressure:float=None,density:float=None,temp:fl
         input_err = True
 
     if input_err == True:
-        print("Error: must input at least two inputs")
-        return None
+        raise ValueError("Must input at least two units")
 
     if units == "metric":
         R = 287
@@ -68,7 +71,7 @@ def calculate_ideal_gas(units:str,pressure:float=None,density:float=None,temp:fl
         t_units = "R"
 
     else:
-        print("Error: units must be \"metric\" or \"imperial\"")
+        raise ValueError("Error: units must be \"metric\" or \"imperial\"")
 
     if pressure == None:
         pressure = density*R*temp
@@ -110,20 +113,20 @@ class Isentropic_Flow():
         elif P_ratio:
             self.P_ratio = P_ratio
             self.M = (5*((P_ratio)**(2/7) - 1))**0.5
-            self.rho_ratio = (1 + M**2/5)**(5/2)
-            self.T_ratio = (1 + (gamma-1)/2*M**2)
+            self.rho_ratio = (1 + self.M**2/5)**(5/2)
+            self.T_ratio = (1 + (gamma-1)/2*self.M**2)
 
         elif rho_ratio:
             self.rho_ratio = rho_ratio
             self.M = (5*((rho_ratio)**(2/5) - 1))**0.5
-            self.P_ratio = (1 + M**2/5)**(7/2)
-            self.T_ratio = (1 + (gamma-1)/2*M**2)
+            self.P_ratio = (1 + self.M**2/5)**(7/2)
+            self.T_ratio = (1 + (gamma-1)/2*self.M**2)
 
         elif T_ratio:
             self.T_ratio = T_ratio
             self.M = (2/(gamma - 1)*(T_ratio - 1))**0.5
-            self.rho_ratio = (1 + M**2/5)**(5/2)
-            self.P_ratio = (1 + M**2/5)**(7/2)
+            self.rho_ratio = (1 + self.M**2/5)**(5/2)
+            self.P_ratio = (1 + self.M**2/5)**(7/2)
 
         else:
             print("ERROR: insuficient inputs")
@@ -393,3 +396,114 @@ def pitot_tube(supersonic:bool=False,gamma:float=1.4,M:float=None,stagnation_P:f
             raise ValueError("Insufficient inputs")
     else:
         raise TypeError("Input \"supersonic\" must be True or False")
+    
+class Expansion_Fan():
+    """requirements:
+    input M1 and theta
+    ouput M2, mu1, mu2, isentropic ratios before & after, P2/P1, T2/T1, rho2/rho1 before & after
+    program gives the right answer"""
+    def __init__(self,units:str,M1:float,defl_angle_theta:float=None,gamma:float=1.4,
+                 P1:float=None,T1:float=None,rho1:float=None,
+                 P2:float=None,T2:float=None,rho2:float=None):
+        """If input P1, T1, and/or rho1, make sure they are in SI units (or Imperial equiv)"""
+        if defl_angle_theta is not None:
+            self.gamma = gamma
+            self.M1 = M1
+            self.theta = defl_angle_theta
+
+            self.nu1 = self.calc_nu(self.M1)
+            self.nu2 = self.theta + self.nu1
+
+            def residual(M,theta,nu1):
+                nu2 = self.calc_nu(M)
+                zero = nu2 - nu1 - theta
+                return zero
+            
+            self.M2 = fsolve(residual, x0=self.M1, args=(self.theta,self.nu1))[0]
+
+            self.mu1 = np.atan(1/(self.M1**2 - 1)**0.5)
+            self.mu2 = np.atan(1/(self.M2**2 - 1)**0.5)
+
+            state1 = Isentropic_Flow(self.gamma,self.M1)
+            state2 = Isentropic_Flow(self.gamma,self.M2)
+            
+            self.P0_ratio1 = state1.P_ratio
+            self.P0_ratio2 = state2.P_ratio
+            self.P_ratio = self.P0_ratio1/self.P0_ratio2
+
+            self.T0_ratio1 = state1.T_ratio
+            self.T0_ratio2 = state2.T_ratio
+            self.T_ratio = self.T0_ratio1/self.T0_ratio2
+
+            self.rho0_ratio1 = state1.rho_ratio
+            self.rho0_ratio2 = state2.rho_ratio
+            self.rho_ratio = self.rho0_ratio1/self.rho0_ratio2
+
+            if P1 and T1 and not rho1:
+                rho1 = calculate_ideal_gas(units,pressure=P1,temp=T1)
+            elif T1 and rho1 and not P1:
+                P1 = calculate_ideal_gas(units,temp=T1,density=rho1)
+            elif P1 and rho1 and not T1:
+                T1 = calculate_ideal_gas(units,pressure=P1,density=rho1)
+
+            if P1 is not None:
+                self.P1 = P1
+                self.P2 = self.P_ratio*P1
+                self.P0 = self.P0_ratio1*P1
+
+            if T1 is not None:
+                self.T1 = T1
+                self.T2 = self.T_ratio*T1
+                self.T0 = self.T0_ratio1*T1
+
+            if rho1 is not None:
+                self.rho1 = rho1
+                self.rho2 = self.rho_ratio*rho1
+                self.rho0 = self.rho0_ratio1*rho1
+
+        elif P2 is not None:
+            self.gamma = gamma
+            self.M1 = M1
+            self.P1 = P1
+            self.P2 = P2
+            state1 = Isentropic_Flow(self.gamma,M=self.M1,P1=self.P1)
+            self.P0 = state1.P_ratio*self.P1
+            self.P0_ratio1 = self.P0/self.P1
+            self.P0_ratio2 = self.P0/self.P2
+            
+            state2 = Isentropic_Flow(self.gamma,P_ratio=self.P0_ratio2,)
+            self.M2 = state2.M
+
+            self.nu1 = self.calc_nu(self.M1)
+            self.nu2 = self.calc_nu(self.M2)
+            
+            self.theta = self.nu2 - self.nu1
+
+            if T1 is not None:
+                self.T1 = T1
+                self.T2 = self.T_ratio*T1
+                self.T0 = self.T0_ratio1*T1
+
+            if rho1 is not None:
+                self.rho1 = rho1
+                self.rho2 = self.rho_ratio*rho1
+                self.rho0 = self.rho0_ratio1*rho1
+
+        elif T2 is not None:
+            return NotImplemented
+        
+        elif rho2 is not None:
+            return NotImplemented
+        
+        else:
+            raise ValueError("Insufficient input values to solve.")
+        
+    def calc_nu(self,M:float) -> float:
+        g = self.gamma
+        return ((g + 1)/(g - 1))**0.5 * np.atan(((g - 1)/(g + 1)*(M**2 - 1))**0.5) - np.atan((M**2 - 1)**0.5)
+
+    def __repr__(self):
+        out_str = ""
+        for atr in self.__dict__:
+            out_str += f"{atr} = {round(float(getattr(self,atr)),4)}\n"
+        return out_str
