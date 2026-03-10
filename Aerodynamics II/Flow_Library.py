@@ -2,14 +2,9 @@ import sys
 import numpy as np
 from scipy.optimize import fsolve
 
-def val_print(obj,atr_name:str,precision:int,unit_str:str=""):
-    try:
-        value = getattr(obj,atr_name)
-    except AttributeError:
-        raise AttributeError(f"atr_name {atr_name} not in obj {obj}. ")
-    
-    value = round(value,precision)
-    print(f"{atr_name} = {value} {unit_str}")
+def val_print(attr:int|float,label:str,precision:int,unit_str:str=""):
+    value = round(attr,precision)
+    print(f"{label} = {value} {unit_str}")
 
 class Constants():
     R = 1
@@ -118,20 +113,20 @@ class Isentropic_Flow():
         elif P_ratio:
             self.P_ratio = P_ratio
             self.M = (5*((P_ratio)**(2/7) - 1))**0.5
-            self.rho_ratio = (1 + M**2/5)**(5/2)
-            self.T_ratio = (1 + (gamma-1)/2*M**2)
+            self.rho_ratio = (1 + self.M**2/5)**(5/2)
+            self.T_ratio = (1 + (gamma-1)/2*self.M**2)
 
         elif rho_ratio:
             self.rho_ratio = rho_ratio
             self.M = (5*((rho_ratio)**(2/5) - 1))**0.5
-            self.P_ratio = (1 + M**2/5)**(7/2)
-            self.T_ratio = (1 + (gamma-1)/2*M**2)
+            self.P_ratio = (1 + self.M**2/5)**(7/2)
+            self.T_ratio = (1 + (gamma-1)/2*self.M**2)
 
         elif T_ratio:
             self.T_ratio = T_ratio
             self.M = (2/(gamma - 1)*(T_ratio - 1))**0.5
-            self.rho_ratio = (1 + M**2/5)**(5/2)
-            self.P_ratio = (1 + M**2/5)**(7/2)
+            self.rho_ratio = (1 + self.M**2/5)**(5/2)
+            self.P_ratio = (1 + self.M**2/5)**(7/2)
 
         else:
             print("ERROR: insuficient inputs")
@@ -412,19 +407,19 @@ class Expansion_Fan():
                  P2:float=None,T2:float=None,rho2:float=None):
         """If input P1, T1, and/or rho1, make sure they are in SI units (or Imperial equiv)"""
         if defl_angle_theta is not None:
+            self.gamma = gamma
             self.M1 = M1
             self.theta = defl_angle_theta
-            self.gamma = gamma
 
-            self.nu1 = self.calc_nu(self.M1,self.gamma)
+            self.nu1 = self.calc_nu(self.M1)
             self.nu2 = self.theta + self.nu1
 
-            def residual(M,theta,nu1,ga):
-                nu2 = self.calc_nu(M,ga)
+            def residual(M,theta,nu1):
+                nu2 = self.calc_nu(M)
                 zero = nu2 - nu1 - theta
                 return zero
             
-            self.M2 = fsolve(residual, x0=self.M1, args=(self.theta,self.nu1,self.gamma))[0]
+            self.M2 = fsolve(residual, x0=self.M1, args=(self.theta,self.nu1))[0]
 
             self.mu1 = np.atan(1/(self.M1**2 - 1)**0.5)
             self.mu2 = np.atan(1/(self.M2**2 - 1)**0.5)
@@ -467,19 +462,20 @@ class Expansion_Fan():
                 self.rho0 = self.rho0_ratio1*rho1
 
         elif P2 is not None:
+            self.gamma = gamma
             self.M1 = M1
             self.P1 = P1
             self.P2 = P2
-            state1 = Isentropic_Flow(self,gamma,M=self.M1,P1=self.P1)
+            state1 = Isentropic_Flow(self.gamma,M=self.M1,P1=self.P1)
             self.P0 = state1.P_ratio*self.P1
             self.P0_ratio1 = self.P0/self.P1
             self.P0_ratio2 = self.P0/self.P2
             
-            state2 = Isentropic_Flow(self.gamma,P_ratio=self.P0_ratio2)
+            state2 = Isentropic_Flow(self.gamma,P_ratio=self.P0_ratio2,)
             self.M2 = state2.M
 
-            self.nu1 = self.calc_nu(self.M1,self.gamma)
-            self.nu2 = self.calc_nu(self.M2,self.gamma)
+            self.nu1 = self.calc_nu(self.M1)
+            self.nu2 = self.calc_nu(self.M2)
             
             self.theta = self.nu2 - self.nu1
 
