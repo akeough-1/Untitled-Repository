@@ -398,14 +398,11 @@ def pitot_tube(supersonic:bool=False,gamma:float=1.4,M:float=None,stagnation_P:f
         raise TypeError("Input \"supersonic\" must be True or False")
     
 class Expansion_Fan():
-    """requirements:
-    input M1 and theta
-    ouput M2, mu1, mu2, isentropic ratios before & after, P2/P1, T2/T1, rho2/rho1 before & after
-    program gives the right answer"""
+    """For input P1, T1, and/or rho1, make sure they are in SI units (or Imperial equiv)"""
     def __init__(self,units:str,M1:float,defl_angle_theta:float=None,gamma:float=1.4,
                  P1:float=None,T1:float=None,rho1:float=None,
                  P2:float=None,T2:float=None,rho2:float=None):
-        """If input P1, T1, and/or rho1, make sure they are in SI units (or Imperial equiv)"""
+        
         if defl_angle_theta is not None:
             self.gamma = gamma
             self.M1 = M1
