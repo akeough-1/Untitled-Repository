@@ -105,7 +105,7 @@ int main(int argc, char **argv) {
 
     /* check if system is first degree */
     if (a == 0) {
-        printf("Root = %lf\n",-c/b);
+        printf("Root = %.20lf\n",-c/b);
         return 0; /* technically a success :) */
     }
 
@@ -139,11 +139,11 @@ int main(int argc, char **argv) {
 
     double Nroot1 = plus_norm_quad(a,b,c);
     double Nroot2 = minus_norm_quad(a,b,c);
-    printf("Normal Roots = %lf, %lf\n",Nroot1,Nroot2);
+    printf("Normal Roots = %.20lf, %.20lf\n",Nroot1,Nroot2);
 
     double Aroot1 = minus_alt_quad(a,b,c);
     double Aroot2 = plus_alt_quad(a,b,c);
-    printf("Alt Roots = %lf, %lf\n",Aroot1,Aroot2);
+    printf("Alt Roots = %.20lf, %.20lf\n",Aroot1,Aroot2);
 
     return 0;
 }
