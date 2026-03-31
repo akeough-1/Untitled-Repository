@@ -241,8 +241,7 @@ int main(int argc, char **argv) {
         }
         sig_bin[sig_bits] = '\0';
 
-        strcpy(floaty.significand,sig_bin);
-        free(sig_bin);
+        floaty.significand = sig_bin;
 
         /* binarize exponent */
         char *exp_bin = malloc(exp_bits+1);
@@ -267,9 +266,8 @@ int main(int argc, char **argv) {
         }
         exp_bin[exp_bits] = '\0';
 
-        strcpy(floaty.exponent,exp_bin);
+        floaty.exponent = exp_bin;
         free(remainder);
-        free(exp_bin);
     }
 
     else {
@@ -282,5 +280,8 @@ int main(int argc, char **argv) {
     printf("%s ",floaty.exponent);
     printf("%s ",floaty.significand);
 
+    
+    free(floaty.exponent);
+    free(floaty.significand);
     return 0;
 }
