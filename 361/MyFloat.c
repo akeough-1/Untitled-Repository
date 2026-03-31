@@ -163,7 +163,10 @@ int main(int argc, char **argv) {
             printf("ARGUMENT ERROR (3): arg 3 is outside of bounds.\n");
         }
     }
-    printf("DEBUG: value = %lf\n",value);
+
+    if (value < 0) {
+        value = fabs(value);
+    }
 
     /* calculate the necesary exponent value to fit given
        always round down */
@@ -211,7 +214,6 @@ int main(int argc, char **argv) {
     if (normalized == 0) {
         /* normalize the value */
         double norm_val = value/pow(2,needed_exp) - 1.0;
-        printf("DEBUG: norm val = %lf\n",norm_val);
 
         /* leave room for \0 */
         char *sig_bin = malloc(sig_bits+1);
@@ -239,7 +241,6 @@ int main(int argc, char **argv) {
         }
         sig_bin[sig_bits] = '\0';
 
-        printf("DEBUG: significand = %s\n",sig_bin);
         strcpy(floaty.significand,sig_bin);
         free(sig_bin);
 
@@ -266,7 +267,6 @@ int main(int argc, char **argv) {
         }
         exp_bin[exp_bits] = '\0';
 
-        printf("DEBUG: exponent = %s\n",exp_bin);
         strcpy(floaty.exponent,exp_bin);
         free(remainder);
         free(exp_bin);
