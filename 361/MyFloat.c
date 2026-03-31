@@ -51,6 +51,7 @@
 #include <limits.h>
 #include <errno.h>
 #include <math.h>
+#include <string.h>
 
 struct MyFloat {
     char sign;
@@ -129,6 +130,17 @@ int main(int argc, char **argv) {
     /* initialize MyFloat struct */
     struct MyFloat floaty;
 
+    /* set sign var in struct */
+    int str_start;
+    if (argv[3][0] == '-') {
+        floaty.sign = '1';
+        str_start = 1;
+    }
+    else {
+        floaty.sign = '0';
+        str_start = 0;
+    }
+
     /* check if 3rd input is 0 */
     double value;
     char *endp;
@@ -195,6 +207,80 @@ int main(int argc, char **argv) {
       - should be 0.something
       - convert "something to binary using frac method"
     */
+
+    if (normalized == 0) {
+        /* normalize the value */
+        double norm_val = value/pow(2,needed_exp) - 1.0;
+        printf("DEBUG: norm val = %lf\n",norm_val);
+
+        /* leave room for \0 */
+        char *sig_bin = malloc(sig_bits+1);
+        for (i=0 ; i<sig_bits ; i++) {
+            norm_val *= 2;
+            if (fabs(norm_val - 1.0) < 1e-6) {
+                sig_bin[i] = '1';
+                
+                /* fill in the rest of the values in this case */
+                for (int j=i+1 ; j<sig_bits ; j++) {
+                    sig_bin[j] = '0';
+                }
+
+                break;
+            }
+
+            else if (norm_val > 1.0) {
+                sig_bin[i] = '1';
+                norm_val -= 1.0;
+            }
+
+            else {
+                sig_bin[i] = '0';
+            }
+        }
+        sig_bin[sig_bits] = '\0';
+
+        printf("DEBUG: significand = %s\n",sig_bin);
+        strcpy(floaty.significand,sig_bin);
+        free(sig_bin);
+
+        /* binarize exponent */
+        char *exp_bin = malloc(exp_bits+1);
+        int bin_exp = needed_exp + ref_exp;
+        /* should never equal zero if normalized */
+        
+        char *remainder = malloc(exp_bits);
+        for (i=0 ; i<exp_bits ; i++) {
+            if (bin_exp % 2) {
+                remainder[i] = '1';
+            }
+            else {
+                remainder[i] = '0';
+            }
+            bin_exp /= 2;
+        }
+
+        int rev;
+        for (i=0 ; i<exp_bits ; i++) {
+            rev = exp_bits - i - 1;
+            exp_bin[i] = remainder[rev];
+        }
+        exp_bin[exp_bits] = '\0';
+
+        printf("DEBUG: exponent = %s\n",exp_bin);
+        strcpy(floaty.exponent,exp_bin);
+        free(remainder);
+        free(exp_bin);
+    }
+
+    else {
+        double denorm_val = value/pow(2,min_exp);
+        printf("PROGRAMMER ERROR (4): denormalized not implemented.\n");
+        return 4;
+    }
+    
+    printf("%c ",floaty.sign);
+    printf("%s ",floaty.exponent);
+    printf("%s ",floaty.significand);
 
     return 0;
 }
