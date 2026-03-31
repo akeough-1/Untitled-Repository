@@ -147,6 +147,7 @@ int main(int argc, char **argv) {
 
     /* start at the second index if there's a negative sign in front */
     i = str_start;
+    int j = 0;
     while (argv[3][i] != '\0') {
         switch (argv[3][i]) {
             /* numbers are ok just pass */
@@ -161,7 +162,7 @@ int main(int argc, char **argv) {
                 return 2;
             }
             else {
-                dec_ind = i;
+                dec_ind = j;
                 break;
             }
             
@@ -172,7 +173,7 @@ int main(int argc, char **argv) {
                 return 2;
             }
             else {
-                exp_ind = i;
+                exp_ind = j;
                 break;
             }
 
@@ -183,15 +184,35 @@ int main(int argc, char **argv) {
         }
 
         i++;
+        j++;
     }
 
     /* define the number of chars in input array */
-    int str_len = i;
+    int str_len = j;
 
     printf("DEBUG: dec loc = %d\n",dec_ind);
     printf("DEBUG: exp loc = %d\n",exp_ind);
     printf("DEBUG: str len = %d\n",str_len);
 
+    /* if exp_ind still -1, then there is none */
+    int exp_val;
+    if (exp_ind == -1) {
+        exp_ind = str_len;
+        exp_val = 0;
+    }
+    else {
+        int size = str_len - 1 - exp_ind;
+        char *exp_str = malloc(size);
+        for (i=0 ; i<size ; i++) {
+            /* get the right index from the input str (account for -)*/
+            j = exp_ind + 1 + i + str_start;
+            exp_str[i] = argv[3][j];
+        }
+        exp_val = atoi(exp_str);
+        free(exp_str);
+    }
+
+    /* extract integer component */
     
 
     return 0;
