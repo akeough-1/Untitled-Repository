@@ -1,10 +1,10 @@
 class Dimension:
     compound_units = {
-        "N":["kg","m","-s","-s"],
-        "lbf":["slug","ft","-s","-s"],
-        "J":["N","m"],
-        "Pa":["N","-m","-m"],
-        "atm":["101325*Pa"]
+        "N":"kg*m/s**2",
+        "lbf":"slug*ft/s**2",
+        "J":"N*m",
+        "Pa":"N/m**2",
+        "atm":{"scale":101325,"units":"Pa"}
         } 
     length_units = {
         "m":1,
@@ -31,6 +31,16 @@ class Dimension:
         "hr":3600,
         "hrs":3600,
     }
+    charge_units = {
+
+    }
+    luminosity_units = {
+
+    }
+    molar_units = {
+        "M":1
+    }
+
 
     def __init__(self, magnitude:int | float, units:str):
         self.magnitude = magnitude
@@ -42,7 +52,7 @@ class Dimension:
             "Temperature":0,
             "Time":0,
             "Charge":0,
-            "Lum":0,
+            "Luminosity":0,
             "Mole":0,
         }
 
@@ -60,6 +70,7 @@ class Dimension:
         self._unit_parser(units)
 
     def _unit_parser(self, unit_str:str):
+        """function to separate the input string into individual units and their exponent"""
         # loop until there are no more * or / separators
         end = False; skip = False
         while(not end):
@@ -132,8 +143,54 @@ class Dimension:
             self._unit_decoder(crnt_str, pow)
 
     def _unit_decoder(self, unit_str:str,pow:int):
-        pass
+        """function to contribute a unit to self magnitude and funamental unit powers"""
 
+        # some of the compound units use this to show that they have negative exp
+        # (I didn't want to send them through the parser again)
+        if unit_str[0] == '-':
+            pow *= -1
+            unit_str = unit_str[1:]
+
+        if unit_str in self.compound_units.keys():
+            comp = self.compound_units[unit_str]
+            if isinstance(comp, dict):
+                self.magnitude *= comp["scale"]
+                self._unit_parser(comp["units"])
+
+            else:
+                self._unit_parser(comp)
+
+        elif unit_str in self.length_units.keys():
+            self.magnitude *= self.length_units[unit_str]
+            self.fund_units["Length"] += pow
+
+        elif unit_str in self.mass_units.keys():
+            self.magnitude *= self.mass_units[unit_str]
+            self.fund_units["Mass"] += pow
+
+        elif unit_str in self.temp_units.keys():
+            self.magnitude *= self.temp_units[unit_str]
+            self.fund_units["Temperature"] += pow
+
+        elif unit_str in self.time_units.keys():
+            self.magnitude *= self.time_units[unit_str]
+            self.fund_units["Time"] += pow
+
+        elif unit_str in self.charge_units.keys():
+            self.magnitude *= self.charge_units[unit_str]
+            self.fund_units["Charge"] += pow
+
+        elif unit_str in self.luminosity_units.keys():
+            self.magnitude *= self.luminosity_units[unit_str]
+            self.fund_units["Luminosity"] += pow
+
+        elif unit_str in self.molar_units.keys():
+            self.magnitude *= self.molar_units[unit_str]
+            self.fund_units["Mole"] += pow
+
+        else:
+            raise NotImplemented
+            
     def convert_units(self, target:str, ndigits:int):
         pass
 
@@ -255,4 +312,6 @@ class Dimension:
     def __round__(self, other):
         pass
 
-dim1 = Dimension(32,"kg**2*m^4/s**3")
+dim1 = Dimension(32,"J/s")
+print(dim1.magnitude)
+print(dim1.fund_units)
