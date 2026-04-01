@@ -10,6 +10,8 @@ Notes:
 
 Classes:
     Dimension class:
+        put compound unit/fund unit dicts as class attributes
+
         attributes:
             magnitude
             Length power
@@ -23,7 +25,29 @@ Classes:
         init:
             recieve magnitude and unit string
             store magnitude as attribute
-            recursively call unit parser -> Unit obj for each 
+            set initial fund unit attrs to 0
+            call unit parser func (unit string)
+        
+        unit parser:
+            recieve entire unit string like "lbf**2*slug^-4
+            raise ValueError if invalid
+            separate at any * or /
+            extract power from ^ or ** 
+              - / causes power to be *= -1
+
+            each time you separate:
+                call unit decoder(str,pow) -> contributes to self fund unit attrs
+
+        unit decoder:
+            recieve unit str and power
+            check if unit str in compound units
+                call this function for each unit str in compound unit dict slot
+                if unit str has '-', mult power in function call by -1
+            else
+                for each fund unit dict, check if unit str defined
+                    multiply self magnitude by scale
+                    add/subtract from self fund unit based on power
+                if the end of the loop is reached, return NotImplemented
 
         a bunch of dunders like __add__ to make it operate like a normal number
             check if units valid for operation
@@ -35,14 +59,4 @@ Classes:
 
         compare target (target_str)
             create a new Dimension for target_str, then check if self units match
-
-    Unit class: class to break down str units
-        put units library as class attributes
-
-        attributes:
-
-
-        init: 
-            recieve indv unit str and power: Unit("psi",-3)
-            check if unit str in compound units
                 
