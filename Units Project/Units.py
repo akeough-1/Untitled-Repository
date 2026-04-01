@@ -41,7 +41,6 @@ class Dimension:
         "M":1
     }
 
-
     def __init__(self, magnitude:int | float, units:str):
         self.magnitude = magnitude
 
@@ -329,8 +328,3 @@ class Dimension:
 
     def __round__(self, other):
         pass
-
-dim1 = Dimension(9,"atm")
-print(dim1.magnitude)
-print(dim1.fund_units)
-dim1.convert_units("atm",0)
