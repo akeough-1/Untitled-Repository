@@ -198,8 +198,19 @@ class Dimension:
         else:
             raise NotImplementedError(f"Unit \"{unit_str}\" not implemented.")
             
-    def convert_units(self, target:str, ndigits:int):
-        pass
+    def convert_units(self, target_str:str, ndigits:int=4):
+        """function to convert to a specific unit string and print
+            if conversion fails, raises a mismatch error"""
+        target = Dimension(1, target_str)
+
+        # check if the fund unit dicts have the same parameters
+        if self.fund_units == target.fund_units:
+            conv_magnitude = self.magnitude/target.magnitude
+            conv_magnitude = round(conv_magnitude,ndigits)
+            print(f"{conv_magnitude} {target_str}")
+
+        else:
+            raise ValueError(f"Unit conversion to \"{target_str}\" failed.")
 
     def __str__(self):
         pass
@@ -319,6 +330,7 @@ class Dimension:
     def __round__(self, other):
         pass
 
-dim1 = Dimension(32,"J/s")
+dim1 = Dimension(9,"atm")
 print(dim1.magnitude)
 print(dim1.fund_units)
+dim1.convert_units("atm",0)
