@@ -57,6 +57,7 @@ class Dimension:
         }
 
         # check if units are just C or F, these cause problems otherwise
+        # convert to Kelvin
         if (units == "F"):
             self.fund_units["Temperature"] += 1
             self.magnitude = (self.magnitude - 32)*5/9 + 273.15
@@ -151,8 +152,12 @@ class Dimension:
             pow *= -1
             unit_str = unit_str[1:]
 
+        # first, check if it's in the compound unit list
+        # if it is, recurse it through the parser and decoder
         if unit_str in self.compound_units.keys():
             comp = self.compound_units[unit_str]
+
+            # some of these have an additional scale attached
             if isinstance(comp, dict):
                 self.magnitude *= comp["scale"]
                 self._unit_parser(comp["units"])
@@ -160,6 +165,7 @@ class Dimension:
             else:
                 self._unit_parser(comp)
 
+        # check to see if the string exists in any of the other dicts
         elif unit_str in self.length_units.keys():
             self.magnitude *= self.length_units[unit_str]
             self.fund_units["Length"] += pow
@@ -188,8 +194,9 @@ class Dimension:
             self.magnitude *= self.molar_units[unit_str]
             self.fund_units["Mole"] += pow
 
+        # string not recognized anywhere, either not implemented or typo
         else:
-            raise NotImplemented
+            raise NotImplementedError(f"Unit \"{unit_str}\" not implemented.")
             
     def convert_units(self, target:str, ndigits:int):
         pass
