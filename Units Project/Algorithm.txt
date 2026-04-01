@@ -1,12 +1,16 @@
 Requirements:
-    Dimension object with magnitude and unit input: Dimension(-3.52e3,"lbf/in^3*slug^-1")
+    Dimension object with magnitude and unit input: 
+        Dimension(-3.52e3,"lbf/in^3*slug^-1")
     Can perform any numerical operation just like any number in python
-      - will raise an error for addition/subtraction without matching unit types
-    Can work with numpy operations such as np.sin, np.sqrt (I think the above should cover this)
-    Can set a target unit that the final result is converted to, error if impossible
+      - will raise an error for addition/sub without matching unit types
+    Can work with numpy operations such as np.sin, np.sqrt 
+        (I think the above should cover this)
+    Can set a target unit that the final result is converted to
+        error if impossible
 
 Notes:
-    organize dimensions into list/dict/attr to represent power of fundamental unit: Length = 3 -> m^3
+    organize dimensions into list/dict/attr to 
+        represent power of fundamental unit: Length = 3 -> m^3
     ex: 5 ft 
         ft = 0.3048m
         self.magnitude = 5*0.3048
@@ -25,63 +29,72 @@ Notes:
             units match
             out magnitude = 0.3048/0.0254 = 12
 
-Classes:
-    Dimension class:
-        put compound unit/fund unit dicts as class attributes
+    ex: 5 F
+        - cannot have other units involved when C or F
+        K = lambda (self.magnitude - 32)*5/9 + 273.15
+        self.magnitude = K
 
-        attributes:
-            magnitude
-            Length power
-            Mass power
-            Temp power
-            Time power
-            Charge power
-            Luminous Intensity power 
-            Mole power
+        - need to store every unit dict index as a lambda function (bruh)
+        - I think it's better to just check if the units are C or F at the
+            beginning like those are literally the only two problem units
 
-        init:
-            recieve magnitude and unit string
-            store magnitude as attribute
-            set initial fund unit attrs to 0
-            call unit parser func (unit string)
-        
-        _unit parser:
-            recieve entire unit string like "lbf**2*slug^-4
-            raise ValueError if invalid
-            separate at any * or /
-            extract power from ^ or ** 
-              - / causes power to be *= -1
 
-            each time you separate:
-                call unit decoder(str,pow) -> contributes to self fund unit attrs
+Dimension class:
+    put compound unit/fund unit dicts as class attributes
 
-        _unit decoder:
-            recieve unit str and power
-            check if unit str in compound units
-                call this function for each unit str in compound unit dict slot
-                if unit str has '-', mult power in function call by -1
-            else
-                for each fund unit dict, check if unit str defined
-                    multiply self magnitude by scale
-                        scale may be a lambda function but that should be ok
-                          - function would need to access self magnitude
-                    add/subtract from self fund unit based on power
-                if the end of the loop is reached, return NotImplemented
+    attributes:
+        magnitude
+        Length power
+        Mass power
+        Temp power
+        Time power
+        Charge power
+        Luminous Intensity power 
+        Mole power
 
-        a bunch of dunders like __add__ to make it operate like a normal number
-            check if units valid for operation
-            operate magnitudes
-            return Dimension obj with new mag and updated unit attrs
+    init:
+        recieve magnitude and unit string
+        store magnitude as attribute
+        set initial fund unit attrs to 0
+        call unit parser func (unit string)
+    
+    _unit parser:
+        recieve entire unit string like "lbf**2*slug^-4
+        raise ValueError if invalid
+        separate at any * or /
+        extract power from ^ or ** 
+            - / causes power to be *= -1
 
-        __str__, __repr__:
-            return something like "5.3 m/s^2"
+        each time you separate:
+            call unit decoder(str,pow) -> contributes to self fund unit attrs
 
-        display convert units (target_str, ndigits)
-            create a new Dimension obj with mag 1 for target_str
-            if fund units attr match
-                convert magnitude =  self mag/new mag
-                round magnitude to ndigits
-                print convert magnitude + unit str
+    _unit decoder:
+        recieve unit str and power
+        check if unit str in compound units
+            call this function for each unit str in compound unit dict slot
+            if unit str has '-', mult power in function call by -1
+        else
+            for each fund unit dict, check if unit str defined
+                multiply self magnitude by scale
+                    scale may be a lambda function but that should be ok
+                        - function would need to access self magnitude
+                add/subtract from self fund unit based on power
+            if the end of the loop is reached, return NotImplemented
 
-            else
-                return mismatch error
+    a bunch of dunders like __add__ to make it operate like a normal number
+        check if units valid for operation
+        operate magnitudes
+        return Dimension obj with new mag and updated unit attrs
+
+    __str__, __repr__:
+        return something like "5.3 m/s^2"
+
+    display convert units (target_str, ndigits)
+        create a new Dimension obj with mag 1 for target_str
+        if fund units attr match
+            convert magnitude =  self mag/new mag
+            round magnitude to ndigits
+            print convert magnitude + unit str
+
+        else
+            return mismatch error

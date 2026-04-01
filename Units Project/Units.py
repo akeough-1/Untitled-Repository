@@ -1,4 +1,13 @@
 class Dimension:
+    length_units = {
+        "m":1,
+        "mm":1e-3,
+        "cm":1e-2,
+        "km":1e3,
+        "ft":0.3048,
+        "in":2.54/100,
+    }
+
     def __init__(self, magnitude:int | float, units:str):
         self.magnitude = magnitude
 
@@ -11,6 +20,19 @@ class Dimension:
             "Lum":0,
             "Mole":0,
         }
+
+        # check if units are just C or F, these cause problems otherwise
+        if (units == "F"):
+            self.fund_units["Temperature"] += 1
+            self.magnitude = (self.magnitude - 32)*5/9 + 273.15
+            return
+        
+        if (units == "C"):
+            self.fund_units["Temperature"] += 1
+            self.magnitude += 273.15
+            return
+
+        self._unit_parser(units)
 
     def _unit_parser(self, unit_str:str):
         pass
@@ -138,3 +160,7 @@ class Dimension:
 
     def __round__(self, other):
         pass
+
+dim1 = Dimension(32,"F")
+print(dim1.magnitude)
+print(dim1.fund_units)
