@@ -7,6 +7,23 @@ Requirements:
 
 Notes:
     organize dimensions into list/dict/attr to represent power of fundamental unit: Length = 3 -> m^3
+    ex: 5 ft 
+        ft = 0.3048m
+        self.magnitude = 5*0.3048
+        self.length = 1
+
+    ex: 1 ft
+        ft = 0.3048m
+        self.magnitude = 0.3048
+        self.length = 1
+
+        convert_unit(in)
+            new_dim:
+                self.magnitude = 0.0254
+                self.length = 1
+            
+            units match
+            out magnitude = 0.3048/0.0254 = 12
 
 Classes:
     Dimension class:
@@ -28,7 +45,7 @@ Classes:
             set initial fund unit attrs to 0
             call unit parser func (unit string)
         
-        unit parser:
+        _unit parser:
             recieve entire unit string like "lbf**2*slug^-4
             raise ValueError if invalid
             separate at any * or /
@@ -38,7 +55,7 @@ Classes:
             each time you separate:
                 call unit decoder(str,pow) -> contributes to self fund unit attrs
 
-        unit decoder:
+        _unit decoder:
             recieve unit str and power
             check if unit str in compound units
                 call this function for each unit str in compound unit dict slot
@@ -57,6 +74,11 @@ Classes:
         __str__, __repr__:
             return something like "5.3 m/s^2"
 
-        compare target (target_str)
-            create a new Dimension for target_str, then check if self units match
-                
+        display convert units (target_str)
+            create a new Dimension obj with mag 1 for target_str
+            if fund units attr match
+                convert magnitude =  self mag/new mag
+                print convert magnitude + unit str
+
+            else
+                return mismatch error
