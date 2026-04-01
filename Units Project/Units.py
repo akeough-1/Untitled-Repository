@@ -38,7 +38,7 @@ class Dimension:
 
     }
     molar_units = {
-        "M":1
+        "mol":1
     }
 
     def __init__(self, magnitude:int | float, units:str):
@@ -142,7 +142,7 @@ class Dimension:
             # run the decoder for each str index
             self._unit_decoder(crnt_str, pow)
 
-    def _unit_decoder(self, unit_str:str,pow:int):
+    def _unit_decoder(self, unit_str:str, pow:int):
         """function to contribute a unit to self magnitude and funamental unit powers"""
 
         # some of the compound units use this to show that they have negative exp
@@ -211,12 +211,23 @@ class Dimension:
         else:
             raise ValueError(f"Unit conversion to \"{target_str}\" failed.")
 
-    def __str__(self):
-        pass
-
-    # might only need one of str or repr
     def __repr__(self):
-        pass
+        si_units = ["m","kg","K","s","c","candela","mol"]
+
+        frmt_str = ""
+        i = 0
+        for key in self.fund_units.keys():
+            pow = self.fund_units[key]
+
+            if pow is 1:
+                frmt_str += f"{si_units[i]} "
+
+            elif pow is not 0:
+                frmt_str += f"{si_units[i]}^{pow} "
+            
+            i+=1
+
+        return (f"{self.magnitude} {frmt_str}")
 
     def __int__(self):
         return int(self.magnitude)
@@ -224,7 +235,11 @@ class Dimension:
     def __float__(self):
         return float(self.magnitude)
     
-    def __round__(self, ndigits:int):
+    def __round__(self, ndigits:int=None):
+        if ndigits is None:
+            self.magnitude = int(self.magnitude)
+            return self
+
         self.magnitude = round(self.magnitude, ndigits)
         return self
 
