@@ -63,6 +63,8 @@ Classes:
             else
                 for each fund unit dict, check if unit str defined
                     multiply self magnitude by scale
+                        scale may be a lambda function but that should be ok
+                          - function would need to access self magnitude
                     add/subtract from self fund unit based on power
                 if the end of the loop is reached, return NotImplemented
 
@@ -74,10 +76,11 @@ Classes:
         __str__, __repr__:
             return something like "5.3 m/s^2"
 
-        display convert units (target_str)
+        display convert units (target_str, ndigits)
             create a new Dimension obj with mag 1 for target_str
             if fund units attr match
                 convert magnitude =  self mag/new mag
+                round magnitude to ndigits
                 print convert magnitude + unit str
 
             else
