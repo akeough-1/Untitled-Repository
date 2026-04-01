@@ -1,0 +1,48 @@
+Requirements:
+    Dimension object with magnitude and unit input: Dimension(-3.52e3,"lbf/in^3*slug^-1")
+    Can perform any numerical operation just like any number in python
+      - will raise an error for addition/subtraction without matching unit types
+    Can work with numpy operations such as np.sin, np.sqrt (I think the above should cover this)
+    Can set a target unit that the final result is converted to, error if impossible
+
+Notes:
+    organize dimensions into list/dict/attr to represent power of fundamental unit: Length = 3 -> m^3
+
+Classes:
+    Dimension class:
+        attributes:
+            magnitude
+            Length power
+            Mass power
+            Temp power
+            Time power
+            Charge power
+            Luminous Intensity power 
+            Mole power
+
+        init:
+            recieve magnitude and unit string
+            store magnitude as attribute
+            recursively call unit parser -> Unit obj for each 
+
+        a bunch of dunders like __add__ to make it operate like a normal number
+            check if units valid for operation
+            operate magnitudes
+            return Dimension obj with new mag and updated unit attrs
+
+        __str__, __repr__:
+            return something like "5.3 m/s^2"
+
+        compare target (target_str)
+            create a new Dimension for target_str, then check if self units match
+
+    Unit class: class to break down str units
+        put units library as class attributes
+
+        attributes:
+
+
+        init: 
+            recieve indv unit str and power: Unit("psi",-3)
+            check if unit str in compound units
+                
