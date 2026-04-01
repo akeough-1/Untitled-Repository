@@ -85,8 +85,8 @@ class Dimension:
                     skip = False
 
                 elif unit_str[i] == '*':
+                    # need to check if this is actually "**"
                     if unit_str[i+1] == '*':
-                        # need to check if this is actually an exp
                         skip = True
                     else:
                         break
@@ -102,9 +102,11 @@ class Dimension:
             # separate current string into label and power
             # truncate string if it has an exponent
             for i in range(len(crnt_str)):
+                # if it makes it all the way to the end, then it has no exponent
                 if crnt_str[i] == '*' and crnt_str[i+1] == '*':
                     try:
                         pow = pow*int(crnt_str[i+2:])
+                    # throw an error if it isn't an integer
                     except ValueError:
                         raise TypeError(f"Could not convert exponent in {crnt_str} to int.")
                     
@@ -114,16 +116,19 @@ class Dimension:
                 elif crnt_str[i] == '^':
                     try:
                         pow = pow*int(crnt_str[i+1:])
+                    # throw an error if it isn't an integer
                     except ValueError:
                         raise TypeError(f"Could not convert exponent in \"{crnt_str}\" to int.")
 
                     crnt_str = crnt_str[:i]
                     break
-
+            
             if pow == 0:
                 raise ValueError(f"Exponent of \"{crnt_str}\" should not be 0.")
 
             #print(f"DEBUG: crnt str = {crnt_str}, pow = {pow}")
+
+            # run the decoder for each str index
             self._unit_decoder(crnt_str, pow)
 
     def _unit_decoder(self, unit_str:str,pow:int):
