@@ -216,7 +216,7 @@ class Dimension:
 
         if type(other) is not Dimension:
             for key in self.fund_units.keys():
-                if self.fund_units[key] is not 0:
+                if self.fund_units[key] != 0:
                     units_equal = False
 
         else: # if other is also Dimension
@@ -233,10 +233,10 @@ class Dimension:
         for key in self.fund_units.keys():
             pow = self.fund_units[key]
 
-            if pow is 1:
+            if pow == 1:
                 frmt_str += f"{si_units[i]} "
 
-            elif pow is not 0:
+            elif pow != 0:
                 frmt_str += f"{si_units[i]}^{pow} "
             
             i+=1
@@ -283,17 +283,53 @@ class Dimension:
     def __ne__(self, other:int | float | str | Dimension):
         return not self.__eq__(other)
 
-    def __lt__(self, other):
-        pass
+    def __lt__(self, other:int | float | Dimension):
+        if type(other) not in [int,float,Dimension]:
+            raise ValueError(f"Type \"{type(other)}\" not allowed for inequalities.")
+    
+        if type(other) == Dimension:
+            less_than = self.magnitude < other.magnitude
+
+        else:
+            less_than = self.magnitude < other
+
+        return less_than
 
     def __le__(self, other):
-        pass
+        if type(other) not in [int,float,Dimension]:
+            raise ValueError(f"Type \"{type(other)}\" not allowed for inequalities.")
+        
+        if type(other) == Dimension:
+            less_than_eq = self.magnitude <= other.magnitude
+
+        else:
+            less_than_eq = self.magnitude <= other
+
+        return less_than_eq
 
     def __gt__(self, other):
-        pass
+        if type(other) not in [int,float,Dimension]:
+            raise ValueError(f"Type \"{type(other)}\" not allowed for inequalities.")
+        
+        if type(other) == Dimension:
+            greater_than = self.magnitude > other.magnitude
+
+        else:
+            greater_than = self.magnitude > other
+
+        return greater_than
 
     def __ge__(self, other):
-        pass
+        if type(other) not in [int,float,Dimension]:
+            raise ValueError(f"Type \"{type(other)}\" not allowed for inequalities.")
+        
+        if type(other) == Dimension:
+            greater_than_eq = self.magnitude >= other.magnitude
+
+        else:
+            greater_than_eq = self.magnitude >= other
+
+        return greater_than_eq
 
     def __add__(self, other):
         pass
