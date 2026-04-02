@@ -211,6 +211,20 @@ class Dimension:
         else:
             raise ValueError(f"Unit conversion to \"{target_str}\" failed.")
 
+    def compare_units(self, other:int | float | Dimension) -> bool:
+        units_equal = True
+
+        if type(other) is not Dimension:
+            for key in self.fund_units.keys():
+                if self.fund_units[key] is not 0:
+                    units_equal = False
+
+        else: # if other is also Dimension
+            if self.fund_units != other.fund_units:
+                units_equal = False
+
+        return units_equal
+            
     def __repr__(self):
         si_units = ["m","kg","K","s","c","candela","mol"]
 
@@ -240,16 +254,34 @@ class Dimension:
             self.magnitude = int(self.magnitude)
             return self
 
-        self.magnitude = round(self.magnitude, ndigits)
+        self.magnitude = round(self.magnitude, 4)
         return self
 
     # numerical Hellscape below
 
-    def __eq__(self, other):
-        pass
+    def __eq__(self, other:int | float | str | Dimension):
+        equal = True
 
-    def __ne__(self, other):
-        pass
+        if type(other) is str:
+            other_dim = Dimension(1,other)
+            if not self.compare_units(other_dim):
+                equal = False
+
+        elif type(other) is Dimension:
+            if not self.compare_units(other):
+                equal = False
+
+            if self.magnitude == other.magnitude:
+                equal = False
+
+        # must be float or int
+        elif self.magnitude != other:
+            equal = False
+
+        return equal
+
+    def __ne__(self, other:int | float | str | Dimension):
+        return not self.__eq__(other)
 
     def __lt__(self, other):
         pass
@@ -339,7 +371,4 @@ class Dimension:
         pass
 
     def __abs__(self, other):
-        pass
-
-    def __round__(self, other):
         pass
