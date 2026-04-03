@@ -504,3 +504,23 @@ class Expansion_Fan():
         for atr in self.__dict__:
             out_str += f"{atr} = {round(float(getattr(self,atr)),4)}\n"
         return out_str
+    
+class Flat_Plate:
+    """Calculates the lift and drag coefficients of a flat plate. Calculates the force values if applicable inputs."""
+    def __init__(self,units:str,M1:float,aoa:float,gamma:float=1.4,P1:float=None):
+        surf1 = Expansion_Fan(units,M1,aoa,gamma=gamma)
+        surf2 = Oblique_Shock(units,M1,defl_angle_theta=aoa,gamma=gamma)
+
+        intermeditate = 2/gamma/M1**2 * (surf2.P_ratio - surf1.P_ratio)
+        self.Cl = intermeditate*np.cos(aoa)
+        self.Cd = intermeditate*np.sin(aoa)
+
+        if P1 is not None:
+            self.L = self.Cl*P1
+            self.D = self.Cd*P1
+
+    def __repr__(self):
+        out_str = ""
+        for atr in self.__dict__:
+            out_str += f"{atr} = {round(float(getattr(self,atr)),4)}\n"
+        return out_str
