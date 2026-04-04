@@ -504,3 +504,70 @@ class Expansion_Fan():
         for atr in self.__dict__:
             out_str += f"{atr} = {round(float(getattr(self,atr)),4)}\n"
         return out_str
+    
+class Flat_Plate:
+    """Calculates the lift and drag coefficients of a flat plate. Calculates the force values if applicable inputs."""
+    def __init__(self,units:str,M1:float,aoa:float,gamma:float=1.4,P1:float=None):
+        surf1 = Expansion_Fan(units,M1,aoa,gamma=gamma)
+        surf2 = Oblique_Shock(units,M1,defl_angle_theta=aoa,gamma=gamma)
+
+        intermeditate = 2/gamma/M1**2 * (surf2.P_ratio - surf1.P_ratio)
+        self.Cl = intermeditate*np.cos(aoa)
+        self.Cd = intermeditate*np.sin(aoa)
+
+        if P1 is not None:
+            self.L = self.Cl*P1
+            self.D = self.Cd*P1
+
+    def __repr__(self):
+        out_str = ""
+        for atr in self.__dict__:
+            out_str += f"{atr} = {round(float(getattr(self,atr)),4)}\n"
+        return out_str
+    
+class Kite_Airfoil:
+    """Calculates the lift/drag coefficients of a kite shaped airfoil"""
+    def __init__(self, units:str, front_angle:float, rear_angle:float, 
+                 angle_of_attack:float, M_inf:float, gamma:float=1.4):
+        theta1 = front_angle
+        theta2 = rear_angle
+        aoa = angle_of_attack
+
+        if aoa > theta1:
+            p1 = Expansion_Fan(units, M_inf, aoa-theta1, gamma=gamma)
+
+        else:
+            # it's actually ok if aoa = theta1
+            p1 = Oblique_Shock(units, M_inf, defl_angle_theta=theta1-aoa, gamma=gamma)
+
+        p3 = Oblique_Shock(units, M_inf, defl_angle_theta=theta1+aoa, gamma=gamma)
+        
+        p2 = Expansion_Fan(units, p1.M2, theta1+theta2, gamma=gamma)
+        p4 = Expansion_Fan(units, p3.M2, theta1+theta2, gamma=gamma)
+
+        c2_ratio = np.tan(theta1)/(np.tan(theta2) + np.tan(theta1))
+        c1_ratio = 1 - c2_ratio
+
+        tau = 2*np.tan(theta1)*c1_ratio
+
+        P1 = p1.P_ratio
+        P2 = p2.P_ratio*P1
+        P3 = p3.P_ratio
+        P4 = p4.P_ratio*P3
+
+        fx = (P1 - P2 + P3 - P4)*tau/2
+        fy = (P3 - P1)*c1_ratio + (P4 - P2)*c2_ratio
+
+        d = np.cos(aoa)*fx + np.sin(aoa)*fy
+        l = -np.sin(aoa)*fx + np.cos(aoa)*fy
+
+        nondim = 2/1.4/M_inf**2
+
+        self.Cl = nondim*l
+        self.Cd = nondim*d
+
+    def __repr__(self):
+        out_str = ""
+        for atr in self.__dict__:
+            out_str += f"{atr} = {round(float(getattr(self,atr)),4)}\n"
+        return out_str
