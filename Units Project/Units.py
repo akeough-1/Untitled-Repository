@@ -267,7 +267,7 @@ class Dimension:
 
     # numerical Hellscape below
 
-    def __eq__(self, other:int | float | str | Dimension):
+    def __eq__(self, other):
         equal = True
 
         if type(other) is str:
@@ -288,7 +288,7 @@ class Dimension:
 
         return equal
 
-    def __ne__(self, other:int | float | str | Dimension):
+    def __ne__(self, other):
         return not self.__eq__(other)
 
     def __lt__(self, other:int | float | Dimension):
@@ -369,7 +369,7 @@ class Dimension:
     def __rsub__(self, other):
         return self.__sub__(other)
     
-    def __mul__(self, other:int | float | Dimension):
+    def __mul__(self, other):
         if type(other) not in [int,float,Dimension]:
             raise ValueError(f"Type \"{type(other)}\" not allowed for multiplication.")
         
@@ -420,22 +420,56 @@ class Dimension:
         return self
     
     def __mod__(self, other):
-        pass
+        if type(other) not in [int,float,Dimension]:
+            raise ValueError(f"Type \"{type(other)}\" not allowed for modulo.")
+        
+        elif type(other) == Dimension:
+            return self.magnitude % other.magnitude
+        
+        else:
+            return self.magnitude % other
 
     def __rmod__(self, other):
-        pass
-
-    def __imod__(self, other):
-        pass
+        if type(other) not in [int,float,Dimension]:
+            raise ValueError(f"Type \"{type(other)}\" not allowed for modulo.")
+        
+        elif type(other) == Dimension:
+            return other.magnitude % self.magnitude
+        
+        else:
+            return other % self.magnitude
 
     def __floordiv__(self, other):
-        pass
+        if type(other) not in [int,float,Dimension]:
+            raise ValueError(f"Type \"{type(other)}\" not allowed for division.")
+        
+        if type(other) == Dimension:
+            for key in self.fund_units.keys():
+                self.fund_units[key] -= other.fund_units[key]
+
+            self.magnitude //= other.magnitude
+
+        else:
+            self.magnitude //= other
+
+        return self
 
     def __rfloordiv__(self, other):
-        pass
+        if type(other) not in [int,float,Dimension]:
+            raise ValueError(f"Type \"{type(other)}\" not allowed for division.")
+        
+        if type(other) == Dimension:
+            for key in self.fund_units.keys():
+                self.fund_units[key] -= other.fund_units[key]
 
-    def __ifloordiv__(self, other):
-        pass
+            self.magnitude = other.magnitude / self.magnitude
+
+        else:
+            self.magnitude = other / self.magnitude
+            for key in self.fund_units.keys():
+                self.fund_units[key] *= -1
+
+        return self
 
     def __pow__(self, other):
         pass
