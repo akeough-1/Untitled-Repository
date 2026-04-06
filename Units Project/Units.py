@@ -265,6 +265,12 @@ class Dimension:
         self.magnitude = round(self.magnitude, 4)
         return self
 
+    def __abs__(self, other):
+        if self.magnitude < 0:
+            self.magnitude *= -1
+
+        return self
+    
     # numerical Hellscape below
 
     def __eq__(self, other):
@@ -472,13 +478,20 @@ class Dimension:
         return self
 
     def __pow__(self, other):
-        pass
+        # cannot be Dimension
+        if type(other) not in [int,float]:
+            raise ValueError(f"Type \"{type(other)}\" not allowed for exponent.")
+        
+        else:
+            self.magnitude **= other
+            for key in self.fund_units.keys():
+                self.fund_units[key] *= other
+
+            return self
 
     def __rpow__(self, other):
-        pass
-
-    def __ipow__(self, other):
-        pass
+        # only happens if the dimension is the exponent
+        raise ValueError(f"Type \"{type(self)}\" not allowed for exponent.")
 
     def __matmul__(self, other):
         pass
@@ -490,7 +503,4 @@ class Dimension:
         pass
 
     def __rdivmod__(self, other):
-        pass
-
-    def __abs__(self, other):
         pass
