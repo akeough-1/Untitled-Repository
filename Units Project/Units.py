@@ -369,23 +369,55 @@ class Dimension:
     def __rsub__(self, other):
         return self.__sub__(other)
     
-    def __mul__(self, other):
-        pass
+    def __mul__(self, other:int | float | Dimension):
+        if type(other) not in [int,float,Dimension]:
+            raise ValueError(f"Type \"{type(other)}\" not allowed for multiplication.")
+        
+        if type(other) == Dimension:
+            for key in self.fund_units.keys():
+                self.fund_units[key] += other.fund_units[key]
+
+            self.magnitude *= other.magnitude
+
+        else:
+            self.magnitude *= other
+
+        return self
 
     def __rmul__(self, other):
-        pass
-
-    def __imul__(self, other):
-        pass
+        return self.__mul__(other)
 
     def __truediv__(self, other):
-        pass
+        if type(other) not in [int,float,Dimension]:
+            raise ValueError(f"Type \"{type(other)}\" not allowed for division.")
+        
+        if type(other) == Dimension:
+            for key in self.fund_units.keys():
+                self.fund_units[key] -= other.fund_units[key]
+
+            self.magnitude /= other.magnitude
+
+        else:
+            self.magnitude /= other
+
+        return self
 
     def __rtruediv__(self, other):
-        pass
+        if type(other) not in [int,float,Dimension]:
+            raise ValueError(f"Type \"{type(other)}\" not allowed for division.")
+        
+        if type(other) == Dimension:
+            for key in self.fund_units.keys():
+                self.fund_units[key] -= other.fund_units[key]
 
-    def __itruediv__(self, other):
-        pass
+            self.magnitude = other.magnitude / self.magnitude
+
+        else:
+            self.magnitude = other / self.magnitude
+            for key in self.fund_units.keys():
+                self.fund_units[key] *= -1
+
+        return self
     
     def __mod__(self, other):
         pass
