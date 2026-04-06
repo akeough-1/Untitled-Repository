@@ -55,6 +55,14 @@ class Dimension:
             "Mole":0,
         }
 
+        # remove all of the empty spaces in str
+        units = units.replace(" ","")
+        units = units.replace("\t","")
+
+        # check if the units string is empty
+        if (units == ""):
+            return
+
         # check if units are just C or F, these cause problems otherwise
         # convert to Kelvin
         if (units == "F"):
