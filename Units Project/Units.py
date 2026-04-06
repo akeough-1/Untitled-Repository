@@ -340,22 +340,34 @@ class Dimension:
         return greater_than_eq
 
     def __add__(self, other):
-        pass
+        if self.compare_units(other) == False:
+            raise ValueError("Units do not match.")
+        
+        elif type(other) == Dimension:
+            self.magnitude += other.magnitude
+        
+        else:
+            self.magnitude += other
+            
+        return self
 
     def __radd__(self, other):
         return self.__add__(other)
     
-    def __iadd__(self, other):
-        pass
-    
     def __sub__(self, other):
-        pass
+        if self.compare_units(other) == False:
+            raise ValueError("Units do not match.")
+        
+        elif type(other) == Dimension:
+            self.magnitude -= other.magnitude
+        
+        else:
+            self.magnitude -= other
+            
+        return self
 
     def __rsub__(self, other):
-        pass
-
-    def __isub__(self, other):
-        pass
+        return self.__sub__(other)
     
     def __mul__(self, other):
         pass
