@@ -299,7 +299,7 @@ class Dimension:
 
     def __lt__(self, other:int | float | Dimension):
         if type(other) not in [int,float,Dimension]:
-            raise ValueError(f"Type \"{type(other)}\" not allowed for inequalities.")
+            raise TypeError(f"Type \"{type(other)}\" not allowed for inequalities.")
     
         if type(other) == Dimension:
             less_than = self.magnitude < other.magnitude
@@ -311,7 +311,7 @@ class Dimension:
 
     def __le__(self, other):
         if type(other) not in [int,float,Dimension]:
-            raise ValueError(f"Type \"{type(other)}\" not allowed for inequalities.")
+            raise TypeError(f"Type \"{type(other)}\" not allowed for inequalities.")
         
         if type(other) == Dimension:
             less_than_eq = self.magnitude <= other.magnitude
@@ -323,7 +323,7 @@ class Dimension:
 
     def __gt__(self, other):
         if type(other) not in [int,float,Dimension]:
-            raise ValueError(f"Type \"{type(other)}\" not allowed for inequalities.")
+            raise TypeError(f"Type \"{type(other)}\" not allowed for inequalities.")
         
         if type(other) == Dimension:
             greater_than = self.magnitude > other.magnitude
@@ -335,7 +335,7 @@ class Dimension:
 
     def __ge__(self, other):
         if type(other) not in [int,float,Dimension]:
-            raise ValueError(f"Type \"{type(other)}\" not allowed for inequalities.")
+            raise TypeError(f"Type \"{type(other)}\" not allowed for inequalities.")
         
         if type(other) == Dimension:
             greater_than_eq = self.magnitude >= other.magnitude
@@ -347,7 +347,7 @@ class Dimension:
 
     def __add__(self, other):
         if self.compare_units(other) == False:
-            raise ValueError("Units do not match.")
+            raise TypeError("Units do not match.")
         
         elif type(other) == Dimension:
             self.magnitude += other.magnitude
@@ -362,7 +362,7 @@ class Dimension:
     
     def __sub__(self, other):
         if self.compare_units(other) == False:
-            raise ValueError("Units do not match.")
+            raise TypeError("Units do not match.")
         
         elif type(other) == Dimension:
             self.magnitude -= other.magnitude
@@ -377,7 +377,7 @@ class Dimension:
     
     def __mul__(self, other):
         if type(other) not in [int,float,Dimension]:
-            raise ValueError(f"Type \"{type(other)}\" not allowed for multiplication.")
+            raise TypeError(f"Type \"{type(other)}\" not allowed for multiplication.")
         
         if type(other) == Dimension:
             for key in self.fund_units.keys():
@@ -395,7 +395,7 @@ class Dimension:
 
     def __truediv__(self, other):
         if type(other) not in [int,float,Dimension]:
-            raise ValueError(f"Type \"{type(other)}\" not allowed for division.")
+            raise TypeError(f"Type \"{type(other)}\" not allowed for division.")
         
         if type(other) == Dimension:
             for key in self.fund_units.keys():
@@ -410,7 +410,7 @@ class Dimension:
 
     def __rtruediv__(self, other):
         if type(other) not in [int,float,Dimension]:
-            raise ValueError(f"Type \"{type(other)}\" not allowed for division.")
+            raise TypeError(f"Type \"{type(other)}\" not allowed for division.")
         
         if type(other) == Dimension:
             for key in self.fund_units.keys():
@@ -427,7 +427,7 @@ class Dimension:
     
     def __mod__(self, other):
         if type(other) not in [int,float,Dimension]:
-            raise ValueError(f"Type \"{type(other)}\" not allowed for modulo.")
+            raise TypeError(f"Type \"{type(other)}\" not allowed for modulo.")
         
         elif type(other) == Dimension:
             return self.magnitude % other.magnitude
@@ -437,7 +437,7 @@ class Dimension:
 
     def __rmod__(self, other):
         if type(other) not in [int,float,Dimension]:
-            raise ValueError(f"Type \"{type(other)}\" not allowed for modulo.")
+            raise TypeError(f"Type \"{type(other)}\" not allowed for modulo.")
         
         elif type(other) == Dimension:
             return other.magnitude % self.magnitude
@@ -447,7 +447,7 @@ class Dimension:
 
     def __floordiv__(self, other):
         if type(other) not in [int,float,Dimension]:
-            raise ValueError(f"Type \"{type(other)}\" not allowed for division.")
+            raise TypeError(f"Type \"{type(other)}\" not allowed for division.")
         
         if type(other) == Dimension:
             for key in self.fund_units.keys():
@@ -462,7 +462,7 @@ class Dimension:
 
     def __rfloordiv__(self, other):
         if type(other) not in [int,float,Dimension]:
-            raise ValueError(f"Type \"{type(other)}\" not allowed for division.")
+            raise TypeError(f"Type \"{type(other)}\" not allowed for division.")
         
         if type(other) == Dimension:
             for key in self.fund_units.keys():
@@ -480,7 +480,7 @@ class Dimension:
     def __pow__(self, other):
         # cannot be Dimension
         if type(other) not in [int,float]:
-            raise ValueError(f"Type \"{type(other)}\" not allowed for exponent.")
+            raise TypeError(f"Type \"{type(other)}\" not allowed for exponent.")
         
         else:
             self.magnitude **= other
@@ -491,8 +491,8 @@ class Dimension:
 
     def __rpow__(self, other):
         # only happens if the dimension is the exponent
-        raise ValueError(f"Type \"{type(self)}\" not allowed for exponent.")
-
+        raise TypeError(f"Type \"{type(self)}\" not allowed for exponent.")
+"""
     def __matmul__(self, other):
         pass
 
@@ -503,4 +503,4 @@ class Dimension:
         pass
 
     def __rdivmod__(self, other):
-        pass
+        pass"""
