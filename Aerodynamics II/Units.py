@@ -1,3 +1,5 @@
+import numpy
+
 class Dimension:
     compound_units = {
         "N":"kg*m/s**2",
@@ -297,8 +299,8 @@ class Dimension:
     def __ne__(self, other):
         return not self.__eq__(other)
 
-    def __lt__(self, other:int | float | Dimension):
-        if type(other) not in [int,float,Dimension]:
+    def __lt__(self, other):
+        if type(other) not in [int,float,numpy.float64,Dimension]:
             raise TypeError(f"Type \"{type(other)}\" not allowed for inequalities.")
     
         if type(other) == Dimension:
@@ -310,7 +312,7 @@ class Dimension:
         return less_than
 
     def __le__(self, other):
-        if type(other) not in [int,float,Dimension]:
+        if type(other) not in [int,float,numpy.float64,Dimension]:
             raise TypeError(f"Type \"{type(other)}\" not allowed for inequalities.")
         
         if type(other) == Dimension:
@@ -322,7 +324,7 @@ class Dimension:
         return less_than_eq
 
     def __gt__(self, other):
-        if type(other) not in [int,float,Dimension]:
+        if type(other) not in [int,float,numpy.float64,Dimension]:
             raise TypeError(f"Type \"{type(other)}\" not allowed for inequalities.")
         
         if type(other) == Dimension:
@@ -334,7 +336,7 @@ class Dimension:
         return greater_than
 
     def __ge__(self, other):
-        if type(other) not in [int,float,Dimension]:
+        if type(other) not in [int,float,numpy.float64,Dimension]:
             raise TypeError(f"Type \"{type(other)}\" not allowed for inequalities.")
         
         if type(other) == Dimension:
@@ -376,7 +378,7 @@ class Dimension:
         return self.__sub__(other)
     
     def __mul__(self, other):
-        if type(other) not in [int,float,Dimension]:
+        if type(other) not in [int,float,numpy.float64,Dimension]:
             raise TypeError(f"Type \"{type(other)}\" not allowed for multiplication.")
         
         if type(other) == Dimension:
@@ -394,7 +396,7 @@ class Dimension:
         return self.__mul__(other)
 
     def __truediv__(self, other):
-        if type(other) not in [int,float,Dimension]:
+        if type(other) not in [int,float,numpy.float64,Dimension]:
             raise TypeError(f"Type \"{type(other)}\" not allowed for division.")
         
         if type(other) == Dimension:
@@ -409,7 +411,7 @@ class Dimension:
         return self
 
     def __rtruediv__(self, other):
-        if type(other) not in [int,float,Dimension]:
+        if type(other) not in [int,float,numpy.float64,Dimension]:
             raise TypeError(f"Type \"{type(other)}\" not allowed for division.")
         
         if type(other) == Dimension:
@@ -426,7 +428,7 @@ class Dimension:
         return self
     
     def __mod__(self, other):
-        if type(other) not in [int,float,Dimension]:
+        if type(other) not in [int,float,numpy.float64,Dimension]:
             raise TypeError(f"Type \"{type(other)}\" not allowed for modulo.")
         
         elif type(other) == Dimension:
@@ -436,7 +438,7 @@ class Dimension:
             return self.magnitude % other
 
     def __rmod__(self, other):
-        if type(other) not in [int,float,Dimension]:
+        if type(other) not in [int,float,numpy.float64,Dimension]:
             raise TypeError(f"Type \"{type(other)}\" not allowed for modulo.")
         
         elif type(other) == Dimension:
@@ -446,7 +448,7 @@ class Dimension:
             return other % self.magnitude
 
     def __floordiv__(self, other):
-        if type(other) not in [int,float,Dimension]:
+        if type(other) not in [int,float,numpy.float64,Dimension]:
             raise TypeError(f"Type \"{type(other)}\" not allowed for division.")
         
         if type(other) == Dimension:
@@ -461,7 +463,7 @@ class Dimension:
         return self
 
     def __rfloordiv__(self, other):
-        if type(other) not in [int,float,Dimension]:
+        if type(other) not in [int,float,numpy.float64,Dimension]:
             raise TypeError(f"Type \"{type(other)}\" not allowed for division.")
         
         if type(other) == Dimension:
@@ -479,7 +481,7 @@ class Dimension:
 
     def __pow__(self, other):
         # cannot be Dimension
-        if type(other) not in [int,float]:
+        if type(other) not in [int,float,numpy.float64]:
             raise TypeError(f"Type \"{type(other)}\" not allowed for exponent.")
         
         else:
