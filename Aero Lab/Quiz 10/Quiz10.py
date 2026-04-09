@@ -8,7 +8,7 @@ with open("nozzle.dat","r") as file:
 # convert radius values to area
 for i in range(len(profile)):
     rad = profile[i,1]
-    profile[i,1] = 2*np.pi*rad**2
+    profile[i,1] = np.pi*rad**2
 
 
 A_star = min(profile[:,1])
@@ -47,14 +47,22 @@ def calc_static_ratio(M1):
     P0_ratio = np.exp(-ds/R)
     return P0_ratio
 
-P2_1_ratio = calc_static_ratio(M_c3)
-P2_ratio = P3_ratio/P2_1_ratio
+gamma = 1.4
+
+def P_over_P0_isentropic(M):
+    return (1 + (gamma - 1)/2 * M**2)**(-gamma/(gamma - 1))
+
+P0_ratio = calc_static_ratio(M_c3)   # should be < 1
+
+P_2_0_ratio = (1 + (gamma - 1)/2 * M_c2**2)**(-gamma/(gamma - 1))
+
+P2_ratio = P_2_0_ratio * P0_ratio   # = P2 / P0_1
 
 print(f"Mc_2 = {M_c2}")
 print(f"P2_ratio = {P2_ratio}")
 
 Pb = 101 #kPa
-Pt = 1000 #kPa
+Pt = 400 #kPa
 Rt = 10 #mm
 Tt = 300 #K
 atm_ratio = Pb/Pt
@@ -81,3 +89,22 @@ print(f"exit mach = {Me}")
 Gamma = (1.4 * (2/(1.4+1))**((1.4+1)/(1.4-1)))**0.5
 m_dot = Gamma*(Pt/1000)/(Rt/1000*Tt)
 print(f"mass flow rate = {m_dot}")
+
+def residual(M,A_ratio):
+    return 1/M*(2/(1+1.4)*(1 + (1.4 - 1)/2*M**2))**((1.4+1)/(2*(1.4-1))) - A_ratio
+
+pressure = []
+for i in range(27):
+    A = profile[i,1]
+    print(A)
+    Mach = fsolve(residual, x0=1.5, args=(A/A_star))[0]
+    p = (1 + (1.4-1)/2*Mach**2)**(1.4/(1.4-1)) * Pt
+    pressure.append(p)
+
+x = np.linspace(0,10,27)
+
+plt.figure()
+plt.title("Pressue through nozzle for 1000 kPa upstream")
+plt.plot(x,pressure)
+plt.show()
+
