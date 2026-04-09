@@ -14,7 +14,7 @@ for i in range(len(profile)):
 A_star = min(profile[:,1])
 
 A_e = profile[-1,1]
-Ae_ratio = 12
+Ae_ratio = A_e/A_star
 
 def residual(M,A_ratio):
     return 1/M*(2/(1+1.4)*(1 + (1.4 - 1)/2*M**2))**((1.4+1)/(2*(1.4-1))) - A_ratio
@@ -57,7 +57,7 @@ Pb = 101 #kPa
 Pt = 1000 #kPa
 Rt = 10 #mm
 Tt = 300 #K
-atm_ratio = 0.025
+atm_ratio = Pb/Pt
 print(f"atm_ratio = {atm_ratio}")
 
 if atm_ratio > P1_ratio:
@@ -66,7 +66,7 @@ if atm_ratio > P1_ratio:
 
 elif atm_ratio > P2_ratio:
     print("Second condition: shock in divergent section")
-    Me = -1/(1.4-1) + (1/(1.4-1)**2 + 2/(1.4-1) * (2/(1.4+1)**((1.4+1)/(1.4-1))) / (Ae_ratio*atm_ratio)**2)**0.5
+    Me = (-1/(1.4-1) + (1/(1.4-1)**2 + 2/(1.4-1) * (2/(1.4+1)**((1.4+1)/(1.4-1))) / (Ae_ratio*atm_ratio)**2)**0.5)**0.5
 
 elif atm_ratio > P3_ratio:
     print("Third condition: Isentropic in nozzle, shock waves outside")
@@ -80,3 +80,4 @@ print(f"exit mach = {Me}")
 
 Gamma = (1.4 * (2/(1.4+1))**((1.4+1)/(1.4-1)))**0.5
 m_dot = Gamma*(Pt/1000)/(Rt/1000*Tt)
+print(f"mass flow rate = {m_dot}")
