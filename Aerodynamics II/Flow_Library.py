@@ -98,9 +98,11 @@ def mach2vel(R:float,mach:float,temp:float) -> float:
 
 class Isentropic_Flow():
     def __init__(self,gamma:float=1.4,M:float=None,P_ratio:float=None,rho_ratio:float=None,T_ratio:float=None,
-                 P1:float=None,rho1:float=None,T1:float=None):
-        """Requires one of M, P_ratio, rho_ratio, or T_ratio.
-        Inputing P1, rho1, and/or T1 will output P0, rho0, and/or T0"""
+                 A_ratio:float=None, supersonic:bool=None, P1:float=None,rho1:float=None,T1:float=None,
+                 A_star:float=None, A:float=None):
+        """Requires one of M, P_ratio, rho_ratio, T_ratio, or A_ratio.
+        Inputing P1, rho1, T1, A_star, and/or A will output P0, rho0, T0, A, and/or A_star.
+        Inputing supersonic as True will solve for the higher mach number when A_ratio input."""
 
         self.ga = gamma
 
@@ -109,24 +111,44 @@ class Isentropic_Flow():
             self.rho_ratio = (1 + M**2/5)**(5/2)
             self.P_ratio = (1 + M**2/5)**(7/2)
             self.T_ratio = (1 + (gamma-1)/2*M**2)
+            self.A_ratio = (5 + M**2)**3/(6**3*M)
 
         elif P_ratio:
             self.P_ratio = P_ratio
             self.M = (5*((P_ratio)**(2/7) - 1))**0.5
             self.rho_ratio = (1 + self.M**2/5)**(5/2)
             self.T_ratio = (1 + (gamma-1)/2*self.M**2)
+            self.A_ratio = (5 + self.M**2)**3/(6**3*self.M)
 
         elif rho_ratio:
             self.rho_ratio = rho_ratio
             self.M = (5*((rho_ratio)**(2/5) - 1))**0.5
             self.P_ratio = (1 + self.M**2/5)**(7/2)
             self.T_ratio = (1 + (gamma-1)/2*self.M**2)
+            self.A_ratio = (5 + self.M**2)**3/(6**3*self.M)
 
         elif T_ratio:
             self.T_ratio = T_ratio
             self.M = (2/(gamma - 1)*(T_ratio - 1))**0.5
             self.rho_ratio = (1 + self.M**2/5)**(5/2)
             self.P_ratio = (1 + self.M**2/5)**(7/2)
+            self.A_ratio = (5 + self.M**2)**3/(6**3*self.M)
+
+        elif A_ratio:
+            self.A_ratio = A_ratio
+
+            def residual(M,A_ratio):
+                return (5 + M**2)**3/(6**3*M) - A_ratio
+            
+            if supersonic == True:
+                M_start = 1.5
+            else:
+                M_start = 0.1
+
+            self.M = fsolve(residual, x0=M_start, args=self.A_ratio)[0]
+            self.rho_ratio = (1 + self.M**2/5)**(5/2)
+            self.P_ratio = (1 + self.M**2/5)**(7/2)
+            self.T_ratio = (1 + (gamma-1)/2*self.M**2)
 
         else:
             print("ERROR: insuficient inputs")
@@ -147,12 +169,23 @@ class Isentropic_Flow():
         else:
             self.T0 = None
 
-    def __repr__(self) -> str:
-        M = round(self.M,4)
-        P_ratio = round(self.P_ratio,4)
-        rho_ratio = round(self.rho_ratio,4)
-        T_ratio = round(self.T_ratio,4)
-        return f"\nM = {M}\nP0/P = {P_ratio}\nrho0/rho = {rho_ratio}\nT0/T = {T_ratio}\n"
+        if A_star:
+            self.A = self.A_ratio*A_star
+            self.A_star = A_star
+        elif A:
+            self.A_star = A/self.A_ratio
+            self.A = A
+        else:
+            self.A = None
+            self.A_star = None
+
+    def __repr__(self):
+        out_str = ""
+        for atr in self.__dict__:
+            value = getattr(self,atr)
+            if value is not None and atr != "ga":
+                out_str += f"{atr} = {round(float(value),4)}\n"
+        return out_str
 
 class Oblique_Shock():
     def __init__(self, units:str, M1:float, gamma:float=1.4, wave_angle_beta:float=None, calc_strong_beta:bool=False,
