@@ -681,7 +681,22 @@ class Nozzle():
             else:
                 state2 = Isentropic_Flow(A_ratio=A/self.A_star2,supersonic=False)
             return state2
+        
+    def plot_nozzle(self, P_ratio:float, xlim:float=1):
+        try: 
+            getattr(self,"A_star")
+        except AttributeError:
+            raise ValueError("No reference area was entered in Nozzle initialization.")
+        
+        step = 0.1
+        y = np.zeros(xlim/step-1)
+        M = np.zeros(xlim/step-1)
+        P = np.zeros(xlim/step-1)
+        i = 0
+        for x in range(step,xlim,step):
+            state = self.solve_at_area()
 
+            i+=1
     def __repr__(self):
         out_str = ""
         for atr in self.__dict__:
