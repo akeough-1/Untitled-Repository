@@ -604,3 +604,86 @@ class Kite_Airfoil:
         for atr in self.__dict__:
             out_str += f"{atr} = {round(float(getattr(self,atr)),4)}\n"
         return out_str
+    
+class Nozzle():
+    def __init__(self, A_ratio:float, P0:float, Pa:float, Ae:float=None):
+        self.P01 = P0
+        subsonic = Isentropic_Flow(A_ratio=A_ratio)
+        supersonic = Isentropic_Flow(A_ratio=A_ratio,supersonic=True)
+
+        p1 = P0/subsonic.P_ratio
+        p2 = P0/supersonic.P_ratio*(7*supersonic.M**2 - 1)/6
+        p3 = P0/supersonic.P_ratio
+
+        # Subsonic
+        if Pa > p1:
+            self.case = 1
+            self.Pe = p1
+            if Ae is not None:
+                self.A_star = Ae/A_ratio
+
+        # Sub to Super, no shocks
+        elif Pa < p2:
+            self.case = 3
+            self.Pe = p3
+
+            # Overexpanded
+            if Pa > p3:
+                pass
+
+            # Underexpanded
+            if Pa < p3:
+                pass
+
+        # Shock in nozzle
+        elif Pa < p1 and Pa > p2:
+            self.case = 2
+            self.Pe = Pa
+
+            rhs = ((5/6)**3 * P0/self.Pe / A_ratio)**2
+            Me = (((25 + 20*rhs)**0.5 - 5)/2)**0.5
+            exit = Isentropic_Flow(M=Me,P1=self.Pe)
+            self.A_ratio2 = exit.A_ratio
+            self.P02 = exit.P0
+            def res(M_s,P01,P02):
+                return (6*M_s**2/(M_s**2 + 5))**(7/2) * (6/(7*M_s**2 - 1))**(5/2) - P02/P01
+            M_s = fsolve(res, x0=1.1, args=(self.P01,self.P02))[0]
+            state2 = Isentropic_Flow(M=M_s)
+            self.shock_A_ratio = state2.A_ratio #A_s/A*
+
+            if Ae is not None:
+                self.A_star = Ae/A_ratio
+                self.A_star2 = self.A_star*self.P01/self.P02
+        
+    def solve_at_area(self, A:float, after_throat:bool=True) -> Isentropic_Flow:
+        """returns state obj at given area"""
+        try: 
+            getattr(self,"A_star")
+        except AttributeError:
+            raise ValueError("No reference area was entered in Nozzle initialization.")
+        
+        if self.case == 1:
+            state1 = Isentropic_Flow(A_ratio=A/self.A_star)
+            return state1
+        
+        elif self.case == 3:
+            if after_throat == True:
+                state3 = Isentropic_Flow(A_ratio=A/self.A_star,supersonic=True)
+            else:
+                state3 = Isentropic_Flow(A_ratio=A/self.A_star,supersonic=False)
+            return state3
+        
+        elif self.case == 2:
+            if after_throat is not True:
+                state2 = Isentropic_Flow(A_ratio=A/self.A_star,supersonic=False)
+            elif A/self.A_star < self.shock_A_ratio:
+                state2 = Isentropic_Flow(A_ratio=A/self.A_star,supersonic=True)
+            else:
+                state2 = Isentropic_Flow(A_ratio=A/self.A_star2,supersonic=False)
+            return state2
+
+    def __repr__(self):
+        out_str = ""
+        for atr in self.__dict__:
+            out_str += f"{atr} = {round(float(getattr(self,atr)),4)}\n"
+        return out_str
