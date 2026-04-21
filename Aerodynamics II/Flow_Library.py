@@ -606,54 +606,82 @@ class Kite_Airfoil:
         return out_str
     
 class Nozzle():
-    def __init__(self, A_ratio:float, P0:float, Pa:float, Ae:float=None):
+    def __init__(self, P0:float, A_Astar:float=None, Ae_At:float=None, Pa:float=None, Pe:float=None, Ae:float=None,
+                    guess1:float=None, guess2:float=None, gamma:float=1.4):
+        
         self.P01 = P0
-        subsonic = Isentropic_Flow(A_ratio=A_ratio)
-        supersonic = Isentropic_Flow(A_ratio=A_ratio,supersonic=True)
+        if (A_Astar and Pa):
+            subsonic = Isentropic_Flow(A_ratio=A_Astar)
+            supersonic = Isentropic_Flow(A_ratio=A_Astar,supersonic=True)
 
-        p1 = P0/subsonic.P_ratio
-        p2 = P0/supersonic.P_ratio*(7*supersonic.M**2 - 1)/6
-        p3 = P0/supersonic.P_ratio
+            p1 = P0/subsonic.P_ratio
+            p2 = P0/supersonic.P_ratio*(7*supersonic.M**2 - 1)/6
+            p3 = P0/supersonic.P_ratio
 
-        # Subsonic
-        if Pa > p1:
-            self.case = 1
-            self.Pe = p1
-            if Ae is not None:
-                self.A_star = Ae/A_ratio
+            # Subsonic
+            if Pa > p1:
+                self.case = 1
+                self.Pe = p1
+                if Ae is not None:
+                    self.A_star = Ae/A_Astar
 
-        # Sub to Super, no shocks
-        elif Pa < p2:
-            self.case = 3
-            self.Pe = p3
+            # Sub to Super, no shocks
+            elif Pa < p2:
+                self.case = 3
+                self.Pe = p3
 
-            # Overexpanded
-            if Pa > p3:
-                pass
+                # Overexpanded
+                if Pa > p3:
+                    pass
 
-            # Underexpanded
-            if Pa < p3:
-                pass
+                # Underexpanded
+                if Pa < p3:
+                    pass
 
-        # Shock in nozzle
-        elif Pa < p1 and Pa > p2:
-            self.case = 2
-            self.Pe = Pa
+            # Shock in nozzle
+            elif Pa < p1 and Pa > p2:
+                self.case = 2
+                self.Pe = Pa
 
-            rhs = ((5/6)**3 * P0/self.Pe / A_ratio)**2
-            Me = (((25 + 20*rhs)**0.5 - 5)/2)**0.5
-            exit = Isentropic_Flow(M=Me,P1=self.Pe)
-            self.A_ratio2 = exit.A_ratio
-            self.P02 = exit.P0
-            def res(M_s,P01,P02):
-                return (6*M_s**2/(M_s**2 + 5))**(7/2) * (6/(7*M_s**2 - 1))**(5/2) - P02/P01
-            M_s = fsolve(res, x0=1.1, args=(self.P01,self.P02))[0]
-            state2 = Isentropic_Flow(M=M_s)
-            self.shock_A_ratio = state2.A_ratio #A_s/A*
+                rhs = ((5/6)**3 * P0/self.Pe / A_Astar)**2
+                Me = (((25 + 20*rhs)**0.5 - 5)/2)**0.5
+                exit = Isentropic_Flow(M=Me,P1=self.Pe)
+                self.A_ratio2 = exit.A_ratio
+                self.P02 = exit.P0
+                def res(M_s,P01,P02):
+                    return (6*M_s**2/(M_s**2 + 5))**(7/2) * (6/(7*M_s**2 - 1))**(5/2) - P02/P01
+                M_s = fsolve(res, x0=1.1, args=(self.P01,self.P02))[0]
+                state2 = Isentropic_Flow(M=M_s)
+                self.shock_A_ratio = state2.A_ratio #A_s/A*
 
-            if Ae is not None:
-                self.A_star = Ae/A_ratio
-                self.A_star2 = self.A_star*self.P01/self.P02
+                if Ae is not None:
+                    self.A_star = Ae/A_Astar
+                    self.A_star2 = self.A_star*self.P01/self.P02
+        
+        elif(Ae_At and Pe):
+            target_p01_pe = P0/Pe
+
+            if (guess1 is None or guess2 is None):
+                guess1 = 1.01
+                guess2 = Ae_At-1e-14
+
+            A2_At, M1, M2, Me, pred, niter = Nozzle.secant_solve_shock_area(
+                Ae_At=Ae_At,
+                target_p01_pe=target_p01_pe,
+                guess1=guess1,
+                guess2=guess2,
+                gamma=gamma
+            )
+
+            print("\nConverged solution")
+            print("-" * 72)
+            print(f"Iterations              = {niter}")
+            print(f"Shock location A2/At    = {A2_At:.8f}")
+            print(f"Mach before shock M1    = {M1:.8f}")
+            print(f"Mach after shock M2     = {M2:.8f}")
+            print(f"Exit Mach number Me     = {Me:.8f}")
+            print(f"Computed p01/pe         = {pred:.8f}")
+            print(f"Target p01/pe           = {target_p01_pe:.8f}")
         
     def solve_at_area(self, A:float, after_throat:bool=True) -> Isentropic_Flow:
         """returns state obj at given area"""
@@ -697,6 +725,132 @@ class Nozzle():
             state = self.solve_at_area()
 
             i+=1
+
+    @staticmethod
+    def mach_from_area(area_ratio, supersonic=True, gamma=1.4, tol=1e-10, max_iter=200):
+        """
+        Solve A/A* = area_ratio for Mach number using bisection.
+        Returns either the subsonic or supersonic branch.
+        """
+        if area_ratio < 1.0:
+            raise ValueError("Area ratio A/A* must be >= 1.")
+
+        if abs(area_ratio - 1.0) < tol:
+            return 1.0
+
+        if supersonic:
+            low = 1.000001
+            high = 20.0
+        else:
+            low = 1e-8
+            high = 0.999999
+
+        for _ in range(max_iter):
+            mid = 0.5 * (low + high)
+            mid_state = Isentropic_Flow(M=mid)
+            low_state = Isentropic_Flow(M=low)
+            f_mid = mid_state.A_ratio - area_ratio
+            f_low = low_state.A_ratio - area_ratio
+
+            if abs(f_mid) < tol:
+                return mid
+
+            if f_low * f_mid < 0:
+                high = mid
+            else:
+                low = mid
+
+        return 0.5 * (low + high)
+    
+    @staticmethod
+    def compute_exit_from_shock_area(A2_At, Ae_At, gamma=1.4):
+        """
+        For a guessed shock location A2/At:
+        1) find M1 just before the shock from supersonic branch
+        2) compute M2 after the shock
+        3) find downstream A2/A*2
+        4) get Ae/A*2
+        5) solve for exit Mach on subsonic branch
+        6) compute predicted p01/pe
+
+        Returns:
+        M1, M2, Me, predicted_p01_pe
+        """
+        if A2_At <= 1.0:
+            raise ValueError("Shock area ratio A2/At must be > 1.")
+        if A2_At >= Ae_At:
+            raise ValueError("Shock area ratio A2/At must be < Ae/At.")
+
+        # Upstream of shock: supersonic branch based on A2/At = A2/A*1, and A*1 = At
+        M1 = Nozzle.mach_from_area(A2_At, supersonic=True, gamma=gamma)
+
+        # Across shock
+        ns = Normal_Shock(units="metric",M1=M1)
+        M2 = ns.M2
+        p02_p01 = ns.P0_ratio
+
+        # Downstream, the new critical area A*2 is different
+        # Since A2/A*2 is based on downstream subsonic M2:
+        state2 = Isentropic_Flow(M=M2)
+        A2_Astar2 = state2.A_ratio
+
+        # Therefore:
+        Ae_Astar2 = (Ae_At / A2_At) * A2_Astar2
+
+        # Exit must be on subsonic branch after the normal shock
+        Me = Nozzle.mach_from_area(Ae_Astar2, supersonic=False, gamma=gamma)
+
+        # p01/pe = (p01/p02) * (p02/pe)
+        exit_state = Isentropic_Flow(M=Me)
+        p02_pe = exit_state.P_ratio
+        predicted_p01_pe = (1.0 / p02_p01) * p02_pe
+
+        return M1, M2, Me, predicted_p01_pe
+    
+    @staticmethod
+    def secant_solve_shock_area(Ae_At, target_p01_pe, guess1, guess2,
+                                gamma=1.4, tol=1e-8, max_iter=50):
+        """
+        Use secant iteration on shock location A2/At so that
+        predicted (p01/pe) matches target_p01_pe.
+        """
+        def residual(A2_At):
+            _, _, _, pred = Nozzle.compute_exit_from_shock_area(A2_At, Ae_At, gamma)
+            return pred - target_p01_pe
+
+        x0 = guess1
+        x1 = guess2
+        f0 = residual(x0)
+        f1 = residual(x1)
+
+        print("Iterating on shock location A2/At")
+        print("-" * 72)
+        print(f"{'iter':>4} {'A2/At':>14} {'residual':>18} {'Me(exit)':>14} {'p01/pe(calc)':>16}")
+
+        for i in range(max_iter):
+            M1, M2, Me, pred = Nozzle.compute_exit_from_shock_area(x1, Ae_At, gamma)
+            print(f"{i:4d} {x1:14.8f} {f1:18.10e} {Me:14.8f} {pred:16.8f}")
+
+            if abs(f1) < tol:
+                return x1, M1, M2, Me, pred, i + 1
+
+            if abs(f1 - f0) < 1e-14:
+                raise RuntimeError("Secant method failed: denominator became too small.")
+
+            x2 = x1 - f1 * (x1 - x0) / (f1 - f0)
+
+            # Keep the next guess inside the nozzle
+            if x2 <= 1.0:
+                x2 = 1.000001
+            elif x2 >= Ae_At:
+                x2 = 0.999999 * Ae_At
+
+            x0, f0 = x1, f1
+            x1 = x2
+            f1 = residual(x1)
+
+        raise RuntimeError("Secant method did not converge within max_iter.")
+
     def __repr__(self):
         out_str = ""
         for atr in self.__dict__:
