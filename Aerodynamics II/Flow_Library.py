@@ -25,6 +25,12 @@ class Metric_Constants(Constants):
     def Pa2atm(P:float) -> float:
         return P/101325
     
+    def M2U(M:float,T:float) -> float:
+        return M*(Metric_Constants.gamma*Metric_Constants.R*T)**0.5
+    
+    def U2M(U:float,T:float) -> float:
+        return U/(Metric_Constants.gamma*Metric_Constants.R*T)**0.5
+    
 class Imperial_Constants(Constants):
     R = 1716
     R_units = "ft*lb/lbm/K"
@@ -37,6 +43,12 @@ class Imperial_Constants(Constants):
     
     def lbf2atm(P:float) -> float:
         return P/101325/0.020886
+    
+    def M2U(M:float,T:float) -> float:
+        return M*(Imperial_Constants.gamma*Imperial_Constants.R*T)**0.5
+    
+    def U2M(U:float,T:float) -> float:
+        return U/(Imperial_Constants.gamma*Imperial_Constants.R*T)**0.5
 
 # h2 - h1 = Cp*(T2 - T1)
 # e2 - e1 = Cv*(T2 - T1)
@@ -98,11 +110,11 @@ def mach2vel(R:float,mach:float,temp:float) -> float:
 
 class Isentropic_Flow():
     def __init__(self,gamma:float=1.4,M:float=None,P_ratio:float=None,rho_ratio:float=None,T_ratio:float=None,
-                 A_ratio:float=None, supersonic:bool=None, P1:float=None,rho1:float=None,T1:float=None,
+                 A_Astar:float=None, supersonic:bool=None, P1:float=None,rho1:float=None,T1:float=None,
                  A_star:float=None, A:float=None):
-        """Requires one of M, P_ratio, rho_ratio, T_ratio, or A_ratio.
+        """Requires one of M, P_ratio, rho_ratio, T_ratio, or A_Astar.
         Inputing P1, rho1, T1, A_star, and/or A will output P0, rho0, T0, A, and/or A_star.
-        Inputing supersonic as True will solve for the higher mach number when A_ratio input."""
+        Inputing supersonic as True will solve for the higher mach number when A_Astar input."""
 
         self.ga = gamma
 
@@ -111,41 +123,41 @@ class Isentropic_Flow():
             self.rho_ratio = (1 + M**2/5)**(5/2)
             self.P_ratio = (1 + M**2/5)**(7/2)
             self.T_ratio = (1 + (gamma-1)/2*M**2)
-            self.A_ratio = (5 + M**2)**3/(6**3*M)
+            self.A_Astar = (5 + M**2)**3/(6**3*M)
 
         elif P_ratio:
             self.P_ratio = P_ratio
             self.M = (5*((P_ratio)**(2/7) - 1))**0.5
             self.rho_ratio = (1 + self.M**2/5)**(5/2)
             self.T_ratio = (1 + (gamma-1)/2*self.M**2)
-            self.A_ratio = (5 + self.M**2)**3/(6**3*self.M)
+            self.A_Astar = (5 + self.M**2)**3/(6**3*self.M)
 
         elif rho_ratio:
             self.rho_ratio = rho_ratio
             self.M = (5*((rho_ratio)**(2/5) - 1))**0.5
             self.P_ratio = (1 + self.M**2/5)**(7/2)
             self.T_ratio = (1 + (gamma-1)/2*self.M**2)
-            self.A_ratio = (5 + self.M**2)**3/(6**3*self.M)
+            self.A_Astar = (5 + self.M**2)**3/(6**3*self.M)
 
         elif T_ratio:
             self.T_ratio = T_ratio
             self.M = (2/(gamma - 1)*(T_ratio - 1))**0.5
             self.rho_ratio = (1 + self.M**2/5)**(5/2)
             self.P_ratio = (1 + self.M**2/5)**(7/2)
-            self.A_ratio = (5 + self.M**2)**3/(6**3*self.M)
+            self.A_Astar = (5 + self.M**2)**3/(6**3*self.M)
 
-        elif A_ratio:
-            self.A_ratio = A_ratio
+        elif A_Astar:
+            self.A_Astar = A_Astar
 
-            def residual(M,A_ratio):
-                return (5 + M**2)**3/(6**3*M) - A_ratio
+            def residual(M,A_Astar):
+                return (5 + M**2)**3/(6**3*M) - A_Astar
             
             if supersonic == True:
                 M_start = 1.5
             else:
                 M_start = 0.1
 
-            self.M = fsolve(residual, x0=M_start, args=self.A_ratio)[0]
+            self.M = fsolve(residual, x0=M_start, args=self.A_Astar)[0]
             self.rho_ratio = (1 + self.M**2/5)**(5/2)
             self.P_ratio = (1 + self.M**2/5)**(7/2)
             self.T_ratio = (1 + (gamma-1)/2*self.M**2)
@@ -170,10 +182,10 @@ class Isentropic_Flow():
             self.T0 = None
 
         if A_star:
-            self.A = self.A_ratio*A_star
+            self.A = self.A_Astar*A_star
             self.A_star = A_star
         elif A:
-            self.A_star = A/self.A_ratio
+            self.A_star = A/self.A_Astar
             self.A = A
         else:
             self.A = None
@@ -606,13 +618,14 @@ class Kite_Airfoil:
         return out_str
     
 class Nozzle():
-    def __init__(self, P0:float, A_Astar:float=None, Ae_At:float=None, Pa:float=None, Pe:float=None, Ae:float=None,
+    def __init__(self, P0:float, Ae_Astar:float=None, Ae_At:float=None, Pa:float=None, Pe:float=None, Ae:float=None,
                     guess1:float=None, guess2:float=None, gamma:float=1.4):
         
         self.P01 = P0
-        if (A_Astar and Pa):
-            subsonic = Isentropic_Flow(A_ratio=A_Astar)
-            supersonic = Isentropic_Flow(A_ratio=A_Astar,supersonic=True)
+        if (Ae_Astar and Pa):
+            self.Ae_Astar = Ae_Astar
+            subsonic = Isentropic_Flow(A_Astar=Ae_Astar)
+            supersonic = Isentropic_Flow(A_Astar=Ae_Astar,supersonic=True)
 
             p1 = P0/subsonic.P_ratio
             p2 = P0/supersonic.P_ratio*(7*supersonic.M**2 - 1)/6
@@ -623,7 +636,7 @@ class Nozzle():
                 self.case = 1
                 self.Pe = p1
                 if Ae is not None:
-                    self.A_star = Ae/A_Astar
+                    self.A_star = Ae/Ae_Astar
 
             # Sub to Super, no shocks
             elif Pa < p2:
@@ -643,19 +656,19 @@ class Nozzle():
                 self.case = 2
                 self.Pe = Pa
 
-                rhs = ((5/6)**3 * P0/self.Pe / A_Astar)**2
-                Me = (((25 + 20*rhs)**0.5 - 5)/2)**0.5
-                exit = Isentropic_Flow(M=Me,P1=self.Pe)
-                self.A_ratio2 = exit.A_ratio
+                rhs = ((5/6)**3 * P0/self.Pe / Ae_Astar)**2
+                self.Me = (((25 + 20*rhs)**0.5 - 5)/2)**0.5
+                exit = Isentropic_Flow(M=self.Me,P1=self.Pe)
+                self.A_ratio2 = exit.A_Astar
                 self.P02 = exit.P0
                 def res(M_s,P01,P02):
                     return (6*M_s**2/(M_s**2 + 5))**(7/2) * (6/(7*M_s**2 - 1))**(5/2) - P02/P01
                 M_s = fsolve(res, x0=1.1, args=(self.P01,self.P02))[0]
                 state2 = Isentropic_Flow(M=M_s)
-                self.shock_A_ratio = state2.A_ratio #A_s/A*
+                self.shock_A_ratio = state2.A_Astar #A_s/A*
 
                 if Ae is not None:
-                    self.A_star = Ae/A_Astar
+                    self.A_star = Ae/Ae_Astar
                     self.A_star2 = self.A_star*self.P01/self.P02
         
         elif(Ae_At and Pe):
@@ -691,23 +704,23 @@ class Nozzle():
             raise ValueError("No reference area was entered in Nozzle initialization.")
         
         if self.case == 1:
-            state1 = Isentropic_Flow(A_ratio=A/self.A_star)
+            state1 = Isentropic_Flow(A_Astar=A/self.A_star)
             return state1
         
         elif self.case == 3:
             if after_throat == True:
-                state3 = Isentropic_Flow(A_ratio=A/self.A_star,supersonic=True)
+                state3 = Isentropic_Flow(A_Astar=A/self.A_star,supersonic=True)
             else:
-                state3 = Isentropic_Flow(A_ratio=A/self.A_star,supersonic=False)
+                state3 = Isentropic_Flow(A_Astar=A/self.A_star,supersonic=False)
             return state3
         
         elif self.case == 2:
             if after_throat is not True:
-                state2 = Isentropic_Flow(A_ratio=A/self.A_star,supersonic=False)
+                state2 = Isentropic_Flow(A_Astar=A/self.A_star,supersonic=False)
             elif A/self.A_star < self.shock_A_ratio:
-                state2 = Isentropic_Flow(A_ratio=A/self.A_star,supersonic=True)
+                state2 = Isentropic_Flow(A_Astar=A/self.A_star,supersonic=True)
             else:
-                state2 = Isentropic_Flow(A_ratio=A/self.A_star2,supersonic=False)
+                state2 = Isentropic_Flow(A_Astar=A/self.A_star2,supersonic=False)
             return state2
         
     def plot_nozzle(self, P_ratio:float, xlim:float=1):
@@ -749,8 +762,8 @@ class Nozzle():
             mid = 0.5 * (low + high)
             mid_state = Isentropic_Flow(M=mid)
             low_state = Isentropic_Flow(M=low)
-            f_mid = mid_state.A_ratio - area_ratio
-            f_low = low_state.A_ratio - area_ratio
+            f_mid = mid_state.A_Astar - area_ratio
+            f_low = low_state.A_Astar - area_ratio
 
             if abs(f_mid) < tol:
                 return mid
@@ -792,7 +805,7 @@ class Nozzle():
         # Downstream, the new critical area A*2 is different
         # Since A2/A*2 is based on downstream subsonic M2:
         state2 = Isentropic_Flow(M=M2)
-        A2_Astar2 = state2.A_ratio
+        A2_Astar2 = state2.A_Astar
 
         # Therefore:
         Ae_Astar2 = (Ae_At / A2_At) * A2_Astar2
