@@ -663,8 +663,8 @@ class Nozzle():
                 self.P02 = exit.P0
                 def res(M_s,P01,P02):
                     return (6*M_s**2/(M_s**2 + 5))**(7/2) * (6/(7*M_s**2 - 1))**(5/2) - P02/P01
-                M_s = fsolve(res, x0=1.1, args=(self.P01,self.P02))[0]
-                state2 = Isentropic_Flow(M=M_s)
+                self.Ms = fsolve(res, x0=1.1, args=(self.P01,self.P02))[0]
+                state2 = Isentropic_Flow(M=self.Ms)
                 self.shock_A_ratio = state2.A_Astar #A_s/A*
 
                 if Ae is not None:
@@ -864,6 +864,108 @@ class Nozzle():
 
         raise RuntimeError("Secant method did not converge within max_iter.")
 
+    def __repr__(self):
+        out_str = ""
+        for atr in self.__dict__:
+            out_str += f"{atr} = {round(float(getattr(self,atr)),4)}\n"
+        return out_str
+    
+class Rayleigh_Duct():
+    def __init__(self, gamma=1.4, M1=None, M2=None, T1=None, T01=None, T02=None, dT0=None):
+        self.ga = gamma
+        
+        # special case for choked nozzle - don't set class attrs because it mimics input
+        if M2 == 1:
+            if T1 is not None and dT0 is not None:
+                def res(M1,T1,dT0):
+                    return (1 - M1**2)**2/(24*M1**2) - dT0/5/T1
+                
+                if dT0 > 1:
+                    x0 = 1.1
+                else:
+                    x0 = 0.9
+                M1 = float(fsolve(res,x0,(T1,dT0))[0])
+
+            elif M1 is not None and dT0 is not None:
+                T1 = dT0/5 / ((1 - M1**2)**2/24/M1**2)
+
+            elif M1 is not None and T1 is not None:
+                dT0 = 5*T1 * (1 - M1**2)**2/24/M1**2
+
+        if dT0 is not None:
+            self.dT0 = dT0
+
+            if M1 is None:
+                if T01 is None and T02 is None or T1 is None:
+                    raise ValueError("Insufficient Inputs.")
+                
+                self.T1 = T1
+                
+                if T01 is not None:
+                    self.T01 = T01
+                    self.T02 = self.T01 + self.dT0
+                elif T02 is not None:
+                    self.T02 = T02
+                    self.T01 = self.T02 - self.dT0
+
+                in_state = Isentropic_Flow(T_ratio=T01/T1)
+                self.M1 = in_state.M
+
+            else:
+                if T01 is None and T02 is None and T1 is None:
+                    raise ValueError("Insufficient Inputs")
+                
+                self.M1 = M1
+                in_state = Isentropic_Flow(M=self.M1)
+                
+                if T1 is None:
+                    if T01 is not None:
+                        self.T01 = T01
+                        self.T02 = self.T01 + self.dT0
+                    elif T02 is not None:
+                        self.T02 = T02
+                        self.T01 = self.T02 - self.dT0
+
+                    self.T1 = self.T01/in_state.T_ratio
+
+                elif T01 is None:
+                    self.T1 = T1
+                    self.T01 = self.T1*in_state.T_ratio
+                    
+                    if T02 is None:
+                        self.T02 = self.T01 + self.dT0
+                    else:
+                        self.T02 = T02
+
+            self.Tstar, self.T0star = self.calc_sonic_temps(self.T1,self.T01,self.M1)
+            if M2 is None:
+                M2_sub, M2_sup = self.calc_M(self.T02,self.T0star)
+
+                if self.M1 > 1:
+                    self.M2 = M2_sup
+                elif self.M1 < 1:
+                    self.M2 = M2_sub
+                else:
+                    raise ValueError("uhh idk what to do if M1 = 1")
+            else:
+                self.M2 = M2
+        else:
+            raise ValueError("u didn't allow for no dT0 input dummy")
+
+    def calc_sonic_temps(self,T,T0,M):
+        Tstar = T/(M**2 * (1 + self.ga)**2 / (1 + self.ga*M**2)**2)
+        T0star = Tstar*T0/T * 6/(5 + M**2)
+        return Tstar, T0star
+
+    def calc_M(self,T0,T0star):
+        a = self.ga**2 * (T0/T0star - 1) + 1
+        b = 1 - self.ga*(T0/T0star - 1)
+        c = T0/T0star
+
+        M_sub = np.sqrt(b/a - b/a*np.sqrt(1 - c*a/b**2))
+        M_sup = np.sqrt(b/a + b/a*np.sqrt(1 - c*a/b**2))
+        return M_sub, M_sup
+    
     def __repr__(self):
         out_str = ""
         for atr in self.__dict__:
