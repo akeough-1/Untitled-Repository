@@ -871,7 +871,7 @@ class Nozzle():
         return out_str
     
 class Rayleigh_Duct():
-    def __init__(self, gamma=1.4, M1=None, M2=None, T1=None, T01=None, T02=None, dT0=None):
+    def __init__(self, gamma=1.4, M1=None, M2=None, T1=None, T01=None, T02=None, dT0=None, P1=None, P2=None):
         self.ga = gamma
         
         # special case for choked nozzle - don't set class attrs because it mimics input
@@ -949,6 +949,14 @@ class Rayleigh_Duct():
                     raise ValueError("uhh idk what to do if M1 = 1")
             else:
                 self.M2 = M2
+
+            if P1 is not None:
+                self.P1 = P1
+                self.P2 = self.P1 * (1 + self.ga*self.M2**2)/(1 + self.ga*self.M1**2)
+            elif P2 is not None:
+                self.P2 = P2
+                self.P1 = self.P2 * (1 + self.ga*self.M1**2)/(1 + self.ga*self.M2**2)
+                
         else:
             raise ValueError("u didn't allow for no dT0 input dummy")
 
